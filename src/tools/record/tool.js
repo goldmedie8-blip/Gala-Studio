@@ -7,6 +7,7 @@ export default defineTool({
   path: '/record',
   stage: 3,
   order: 20,
+  component: () => import('./Panel.jsx'),
   summary: 'Capture vocals and guitar with clean input and latency correction.',
   features: [
     'Choose your microphone or audio interface',

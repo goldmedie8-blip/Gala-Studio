@@ -1,9 +1,13 @@
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { defineConfig } from 'vitest/config'
 
-export default defineConfig({
+// "npm run dev:phone" serves over https. Phones only allow the microphone on https or localhost,
+// so testing recording from a phone on your Wi-Fi needs this.
+export default defineConfig(({ mode }) => ({
   plugins: [
+    mode === 'phone' && basicSsl(),
     react(),
     VitePWA({
       registerType: 'autoUpdate',
@@ -42,4 +46,4 @@ export default defineConfig({
     include: ['src/**/*.test.{js,jsx}'],
     css: false,
   },
-})
+}))

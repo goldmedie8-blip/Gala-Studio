@@ -14,6 +14,16 @@ npm run preview    # try the production build, including offline mode
 
 To test offline: run `npm run build` then `npm run preview`, open the app once, then turn off Wi-Fi (or tick "Offline" in the browser DevTools Network tab) and reload. The app must still open.
 
+## Trying the microphone
+
+Browsers only allow the microphone on a secure connection.
+
+- **On your laptop:** `npm run dev` and open `http://localhost:5173`. localhost counts as secure, so it just works.
+- **On your phone, same Wi-Fi:** run `npm run dev:phone`, then open the `https://` address it prints (the Network line). The browser warns about the certificate because it is self-signed. Tap Advanced, then continue. After that the Record tool works.
+- **For friends and real users:** deploy the `dist` folder (after `npm run build`) to any https host such as Netlify, Vercel or GitHub Pages.
+
+Use headphones when recording over a beat, otherwise the speakers leak into the microphone.
+
 ## Rules for everyone working on Gala
 
 1. `npm test` must be green before anything is merged. A git pre-commit hook enforces this on every commit.
