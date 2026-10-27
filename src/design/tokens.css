@@ -1,0 +1,48 @@
+/* Gala design tokens. Every colour, space and radius in the app comes from here. */
+:root {
+  color-scheme: dark;
+
+  --bg: #0c0c0e;
+  --surface: #151518;
+  --surface-2: #1d1d22;
+  --surface-3: #27272d;
+  --border: #2b2b32;
+  --border-strong: #3a3a43;
+
+  --text: #f5f5f6;
+  --text-2: #a8a8b3;
+  --text-3: #7a7a86;
+
+  --accent: #f5a623;
+  --accent-hover: #ffb93f;
+  --accent-ink: #1b1204;
+  --accent-soft: rgba(245, 166, 35, 0.14);
+
+  --ok: #34c759;
+  --ok-soft: rgba(52, 199, 89, 0.14);
+  --danger: #ff5a52;
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+
+  /* Native-feeling fonts: Segoe UI on Windows, Roboto on Android, San Francisco on Apple. */
+  --font: 'Inter', 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  --sidebar-w: 240px;
+  --topbar-h: 56px;
+  --player-h: 76px;
+  --bottomnav-h: 56px;
+
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+}

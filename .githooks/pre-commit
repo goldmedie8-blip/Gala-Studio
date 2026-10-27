@@ -1,0 +1,8 @@
+#!/bin/sh
+# Gala Studio: no commit goes in unless every test passes.
+echo "Gala: running npm test before commit..."
+if ! npm test --silent; then
+  echo ""
+  echo "Tests failed. Commit blocked. Fix the failing tests and commit again."
+  exit 1
+fi

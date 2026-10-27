@@ -1,0 +1,326 @@
+/* Shared building blocks: buttons, chips, cards, grids, empty states. */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  height: 40px;
+  padding: 0 var(--s4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.1s var(--ease);
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.btn-secondary {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--surface-3);
+}
+.btn:disabled {
+  opacity: 0.45;
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-2);
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+.icon-btn:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.icon-btn:disabled {
+  opacity: 0.4;
+}
+.icon-btn-primary {
+  width: 40px;
+  height: 40px;
+  background: var(--text);
+  color: var(--bg);
+}
+.icon-btn-primary:hover:not(:disabled) {
+  background: #fff;
+  color: var(--bg);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--s2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.chip-accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.chip-ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.page {
+  padding: var(--s5) var(--s6) var(--s7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s6);
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+}
+
+.tile {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  background: var(--surface-3);
+  color: var(--accent);
+}
+.tile-lg {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lead {
+  color: var(--text-2);
+  font-size: 16px;
+  max-width: 52ch;
+}
+
+.muted {
+  color: var(--text-2);
+}
+
+.section-title {
+  margin-bottom: var(--s3);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--s4);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--s5);
+}
+
+.tool-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  padding: var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.tool-card:hover {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+.tool-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.tool-card-body strong {
+  font-size: 15px;
+}
+.tool-card-body span {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s6);
+  padding: var(--s6);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  align-items: flex-start;
+  z-index: 1;
+}
+.wave {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 120px;
+  flex: none;
+}
+.wave span {
+  width: 5px;
+  border-radius: 3px;
+  background: var(--accent);
+  opacity: 0.85;
+}
+.wave span:nth-child(3n) {
+  opacity: 0.45;
+}
+
+.stage-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.stage-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  padding: var(--s3) var(--s4);
+  background: var(--surface);
+}
+.stage-item + .stage-item {
+  border-top: 1px solid var(--border);
+}
+.stage-num {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 700;
+}
+.stage-item[data-status='done'] .stage-num {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+.stage-item[data-status='next'] .stage-num {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.stage-body {
+  flex: 1;
+  min-width: 0;
+}
+.stage-body strong {
+  display: block;
+}
+.stage-body span {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--s3);
+  padding: var(--s7) var(--s5);
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+}
+.empty p {
+  color: var(--text-2);
+  max-width: 44ch;
+}
+
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-top: var(--s2);
+}
+.feature-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  color: var(--text-2);
+}
+.feature-list li::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  flex: none;
+}
+
+@media (max-width: 860px) {
+  .page {
+    padding: var(--s4) var(--s4) var(--s6);
+    gap: var(--s5);
+  }
+  .hero {
+    padding: var(--s5);
+  }
+  .wave {
+    display: none;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
