@@ -1,0 +1,231 @@
+.beats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+
+.beats-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s4) var(--s5);
+}
+
+.play-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-width: 124px;
+  height: 48px;
+  padding: 0 var(--s5);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 16px;
+  font-weight: 700;
+  transition: transform 0.1s var(--ease), background 0.15s var(--ease);
+}
+.play-btn:hover {
+  background: var(--accent-hover);
+}
+.play-btn:active {
+  transform: scale(0.97);
+}
+.play-btn-stop {
+  background: var(--text);
+  color: var(--bg);
+}
+.play-btn-stop:hover {
+  background: #fff;
+}
+
+.tempo {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+}
+.tempo-value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s1);
+}
+.tempo-value input {
+  width: 64px;
+  height: 40px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.tempo-value span {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+.field label {
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.field select {
+  height: 40px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.field input[type='range'] {
+  width: 140px;
+  height: 40px;
+  accent-color: var(--accent);
+}
+
+.beats-actions {
+  display: flex;
+  gap: var(--s2);
+  margin-left: auto;
+}
+
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.chip-btn {
+  height: 36px;
+  padding: 0 var(--s4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 600;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.chip-btn:hover {
+  background: var(--surface-3);
+  border-color: var(--accent);
+}
+
+.lanes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+.lane {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--s3);
+}
+.lane-name {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+button.lane-name:hover {
+  color: var(--text);
+}
+.lane-note {
+  font-variant-numeric: tabular-nums;
+}
+
+.cells {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+  gap: 3px;
+}
+.cell {
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: var(--surface-3);
+  transition: background 0.08s linear, transform 0.08s linear;
+}
+.cell[data-beat='true'] {
+  background: var(--border-strong);
+}
+.cell[data-active='true'] {
+  background: var(--text-3);
+}
+.cell[data-on='true'] {
+  background: var(--accent);
+}
+.cell[data-on='true'][data-active='true'] {
+  background: #fff;
+  transform: scale(1.06);
+}
+
+.melody-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-bottom: var(--s3);
+}
+.melody-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+}
+.hint {
+  margin-top: var(--s3);
+  font-size: 13px;
+}
+.card .section-title {
+  margin-bottom: var(--s3);
+}
+
+@media (max-width: 860px) {
+  .beats-bar {
+    gap: var(--s3);
+  }
+  .play-btn {
+    flex: 1;
+  }
+  .beats-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+  .beats-actions .btn {
+    flex: 1;
+  }
+  .lane {
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: var(--s2);
+  }
+  .cells {
+    gap: 2px;
+  }
+  .cell {
+    height: 30px;
+    border-radius: 3px;
+  }
+  .card {
+    padding: var(--s3);
+  }
+  .field input[type='range'] {
+    width: 110px;
+  }
+}
