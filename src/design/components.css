@@ -64,6 +64,13 @@
   color: var(--bg);
 }
 
+.alert {
+  padding: var(--s3) var(--s4);
+  border-radius: var(--radius);
+  background: rgba(255, 90, 82, 0.12);
+  color: var(--danger);
+}
+
 .chip {
   display: inline-flex;
   align-items: center;

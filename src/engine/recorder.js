@@ -12,6 +12,8 @@ export function pickMimeType(MediaRecorderCtor = globalThis.MediaRecorder) {
 export function extensionFor(mimeType = '') {
   if (mimeType.includes('mp4')) return 'm4a'
   if (mimeType.includes('ogg')) return 'ogg'
+  if (mimeType.includes('mpeg') || mimeType.includes('mp3')) return 'mp3'
+  if (mimeType.includes('wav')) return 'wav'
   return 'webm'
 }
 

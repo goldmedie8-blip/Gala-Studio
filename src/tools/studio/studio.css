@@ -1,0 +1,310 @@
+.studio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+  max-width: 880px;
+}
+
+.studio .card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.studio-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.studio-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s2);
+  padding: var(--s4);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+}
+
+.file-btn {
+  cursor: pointer;
+}
+.file-btn:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.voice-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  max-height: 220px;
+  overflow-y: auto;
+}
+.voice-option {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  height: 44px;
+  padding: 0 var(--s3);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+  text-align: left;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.voice-option:hover {
+  background: var(--surface-3);
+}
+.voice-option[aria-checked='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.voice-option[aria-checked='true'] svg {
+  color: var(--accent);
+}
+.voice-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+/* The voice waveform sits on a timeline. The orange line is where the beat comes in. */
+.timeline {
+  position: relative;
+  height: 96px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.timeline-voice {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: var(--lead);
+  width: var(--span);
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+.timeline-voice span {
+  flex: 1;
+  min-width: 1px;
+  border-radius: 2px;
+  background: var(--text-3);
+}
+.timeline-beat {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--beat);
+  width: 2px;
+  background: var(--accent);
+}
+.timeline-beat::after {
+  content: attr(data-label);
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.timeline-head {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--text);
+}
+
+.align {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.align > label {
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.align-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.align-controls input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+.align-value {
+  min-width: 72px;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.chip-btn {
+  height: 36px;
+  padding: 0 var(--s4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 600;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.chip-btn:hover {
+  background: var(--surface-3);
+  border-color: var(--accent);
+}
+
+.studio-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s3);
+}
+.tempo {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+}
+.tempo-value {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s1);
+}
+.tempo-value input {
+  width: 64px;
+  height: 40px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.tempo-value span {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+.field label {
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.field select {
+  height: 40px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.field input[type='range'] {
+  width: 100%;
+  height: 40px;
+  accent-color: var(--accent);
+}
+
+.hint {
+  font-size: 13px;
+}
+
+.mix {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s5);
+}
+
+.studio .card.studio-transport {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s4);
+}
+.play-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-width: 124px;
+  height: 48px;
+  padding: 0 var(--s5);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 16px;
+  font-weight: 700;
+  transition: transform 0.1s var(--ease), background 0.15s var(--ease);
+}
+.play-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.play-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.play-btn:disabled {
+  opacity: 0.45;
+}
+.play-btn-stop {
+  background: var(--text);
+  color: var(--bg);
+}
+.studio-time {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.studio-export {
+  margin-left: auto;
+}
+
+@media (max-width: 860px) {
+  .studio .card {
+    padding: var(--s4);
+  }
+  .mix {
+    grid-template-columns: 1fr;
+    gap: var(--s3);
+  }
+  .play-btn {
+    flex: 1;
+  }
+  .studio-export {
+    width: 100%;
+    margin-left: 0;
+  }
+  .timeline {
+    height: 80px;
+  }
+}

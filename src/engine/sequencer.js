@@ -16,10 +16,11 @@ export class Sequencer {
     this.nextTime = 0
   }
 
-  start() {
+  // `at` is an optional audio-clock time for step 0, so a beat can be lined up with something else.
+  start(at) {
     this.stop()
     this.step = 0
-    this.nextTime = this.getTime() + 0.06
+    this.nextTime = at ?? this.getTime() + 0.06
     this.timer = setInterval(() => this.tick(), this.interval)
     this.tick()
   }

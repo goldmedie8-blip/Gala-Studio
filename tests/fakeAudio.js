@@ -37,6 +37,14 @@ export class FakeAudioContext {
   createBiquadFilter = () => node()
   createDynamicsCompressor = () => node()
   createBuffer = (channels, length) => ({ getChannelData: () => new Float32Array(length) })
+  // A 2 second "voice" that gets louder, so the waveform has a shape.
+  decodeAudioData = vi.fn(async () => fakeVoiceBuffer())
+}
+
+export function fakeVoiceBuffer(seconds = 2, sampleRate = 44100) {
+  const data = new Float32Array(seconds * sampleRate)
+  for (let i = 0; i < data.length; i++) data[i] = Math.sin(i / 20) * (i / data.length)
+  return { duration: seconds, length: data.length, sampleRate, numberOfChannels: 1, getChannelData: () => data }
 }
 
 export class FakeOfflineAudioContext extends FakeAudioContext {

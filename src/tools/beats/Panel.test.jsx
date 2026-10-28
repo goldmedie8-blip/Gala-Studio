@@ -92,7 +92,20 @@ describe('Beats panel', () => {
     expect(bpm).toHaveValue(start)
     await user.clear(bpm)
     await user.type(bpm, '999')
+    await user.tab() // out-of-range numbers are clamped when you leave the box
     expect(bpm).toHaveValue(200)
+  })
+
+  test('typing a tempo works: clearing the box does not snap it to another number', async () => {
+    const user = userEvent.setup()
+    render(<Panel />)
+    const bpm = screen.getByLabelText('Tempo in beats per minute')
+    await user.clear(bpm)
+    expect(bpm).toHaveValue(null)
+    await user.type(bpm, '128')
+    expect(bpm).toHaveValue(128)
+    await user.tab()
+    expect(bpm).toHaveValue(128)
   })
 
   test('a style button loads its pattern', async () => {

@@ -7,7 +7,8 @@ export default defineTool({
   path: '/studio',
   stage: 2,
   order: 10,
-  summary: 'Multitrack timeline with a mixer for every track.',
+  component: () => import('./Panel.jsx'),
+  summary: 'Put a beat under your recorded voice and line them up.',
   features: [
     'Play, pause, loop, tempo and metronome',
     'Volume, pan, mute and solo per track',

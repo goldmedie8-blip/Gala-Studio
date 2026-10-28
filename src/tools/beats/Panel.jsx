@@ -1,5 +1,6 @@
 import { Icon } from '../../design/Icon.jsx'
-import { DRUM_LANES, MAX_BPM, MIN_BPM, STEPS } from '../../engine/pattern.js'
+import { TempoInput } from '../../design/TempoInput.jsx'
+import { DRUM_LANES, STEPS } from '../../engine/pattern.js'
 import { KEYS, MELODY_ROWS, SCALES, degreeToMidi, noteName } from '../../engine/scale.js'
 import { SOUNDS } from '../../engine/voices.js'
 import './beats.css'
@@ -46,15 +47,7 @@ export default function Panel() {
             <Icon name="minus" size={18} />
           </button>
           <label className="tempo-value">
-            <input
-              type="number"
-              inputMode="numeric"
-              min={MIN_BPM}
-              max={MAX_BPM}
-              value={pattern.bpm}
-              aria-label="Tempo in beats per minute"
-              onChange={(e) => beat.setField('bpm', e.target.value)}
-            />
+            <TempoInput value={pattern.bpm} onChange={(v) => beat.setField('bpm', v)} />
             <span>BPM</span>
           </label>
           <button type="button" className="icon-btn" aria-label="Faster" onClick={() => beat.nudgeTempo(1)}>
@@ -88,7 +81,7 @@ export default function Panel() {
       </section>
 
       {beat.error && (
-        <p className="rec-error" role="alert">
+        <p className="alert" role="alert">
           {beat.error}
         </p>
       )}
