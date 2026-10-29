@@ -5,7 +5,9 @@ import { defineConfig } from 'vitest/config'
 
 // "npm run dev:phone" serves over https. Phones only allow the microphone on https or localhost,
 // so testing recording from a phone on your Wi-Fi needs this.
+const base = process.env.BASE_PATH || '/'
 export default defineConfig(({ mode }) => ({
+  base,
   plugins: [
     mode === 'phone' && basicSsl(),
     react(),
@@ -20,8 +22,8 @@ export default defineConfig(({ mode }) => ({
         background_color: '#0c0c0e',
         display: 'standalone',
         orientation: 'any',
-        start_url: '/',
-        scope: '/',
+        start_url: base,
+        scope: base,
         categories: ['music', 'productivity'],
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
@@ -33,13 +35,13 @@ export default defineConfig(({ mode }) => ({
         // Everything the studio needs must be in the precache so it opens with no network.
         // Audio samples are added here as they land in later stages.
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,mp3,wav,ogg,json}'],
-        navigateFallback: '/index.html',
+        navigateFallback: `${base}index.html`,
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
         cleanupOutdatedCaches: true,
       },
     }),
   ],
-  test: {
+    test: {
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./tests/setup.js'],
@@ -47,5 +49,6 @@ export default defineConfig(({ mode }) => ({
     css: false,
     testTimeout: 30000,
     hookTimeout: 30000,
+    maxWorkers: 2,
   },
 }))
