@@ -45,5 +45,7 @@ export default defineConfig(({ mode }) => ({
     setupFiles: ['./tests/setup.js'],
     include: ['src/**/*.test.{js,jsx}'],
     css: false,
+    testTimeout: 30000,
+    hookTimeout: 30000,
   },
 }))

@@ -64,6 +64,19 @@
   color: var(--bg);
 }
 
+.input {
+  height: 40px;
+  min-width: 0;
+  padding: 0 var(--s3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.input:focus-visible {
+  border-color: var(--accent);
+}
+
 .alert {
   padding: var(--s3) var(--s4);
   border-radius: var(--radius);

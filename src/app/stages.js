@@ -2,7 +2,7 @@
 // When a stage ships, change its status to 'done'. The first stage that is not done shows as 'next'.
 export const STAGES = [
   { stage: 0, name: 'Foundation', summary: 'App shell, design system, offline support and tests', done: true },
-  { stage: 1, name: 'Projects and storage', summary: 'Create, save, back up and restore projects on the device', done: false },
+  { stage: 1, name: 'Projects and storage', summary: 'Create, save, back up and restore projects on the device', done: true },
   { stage: 2, name: 'Audio engine', summary: 'Transport, multitrack timeline and mixer', done: false },
   { stage: 3, name: 'Recording', summary: 'Microphone and guitar capture with latency correction', done: false },
   { stage: 4, name: 'Beats and instruments', summary: 'Sequencer, drum pads, piano roll and sample library', done: false },

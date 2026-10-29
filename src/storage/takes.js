@@ -32,17 +32,34 @@ async function run(mode, action) {
 
 const toTake = ({ data, ...rest }) => ({ ...rest, blob: new Blob([data], { type: rest.mimeType }) })
 
-export async function saveTake({ blob, mimeType, durationMs, name }) {
+// `meta` is optional extra information about how the take was made, for example the tempo of the beat
+// it was recorded over, so Studio can put that beat back under it.
+export async function saveTake({ blob, mimeType, durationMs, name, meta }) {
   const row = {
     id: crypto.randomUUID(),
     name,
     mimeType,
     durationMs,
     createdAt: Date.now(),
+    ...(meta ? { meta } : {}),
     data: await blob.arrayBuffer(),
   }
   await run('readwrite', (store) => store.put(row))
   return toTake(row)
+}
+
+// Stores a take under the id it already has. Used when restoring a backup, so songs keep pointing at it.
+export async function importTake({ id, name, mimeType, durationMs, createdAt, meta, blob }) {
+  const row = {
+    id,
+    name,
+    mimeType,
+    durationMs,
+    createdAt,
+    ...(meta ? { meta } : {}),
+    data: await blob.arrayBuffer(),
+  }
+  await run('readwrite', (store) => store.put(row))
 }
 
 export async function listTakes() {

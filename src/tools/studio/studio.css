@@ -18,6 +18,27 @@
   gap: var(--s3);
 }
 
+.song-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s3);
+}
+.song-field {
+  flex: 1;
+  min-width: 0;
+}
+.save-state {
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 600;
+}
+.save-state[data-state='saved'] {
+  color: var(--ok);
+}
+.save-state[data-state='error'] {
+  color: var(--danger);
+}
+
 .studio-empty {
   display: flex;
   flex-direction: column;
@@ -240,6 +261,123 @@
   font-size: 13px;
 }
 
+/* Group of controls that can be switched off together while recording. */
+.plain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.plain:disabled {
+  opacity: 0.55;
+}
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: 13px;
+}
+.notice svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--accent);
+}
+
+.over-enable {
+  align-self: flex-start;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  color: var(--text-2);
+}
+.check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.sync summary {
+  cursor: pointer;
+  color: var(--text-2);
+  font-weight: 600;
+}
+.sync[open] summary {
+  margin-bottom: var(--s3);
+}
+
+.meter {
+  height: 14px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.meter-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--ok);
+  transition: width 0.06s linear;
+}
+.meter-fill[data-clipping='true'] {
+  background: var(--danger);
+}
+
+.over-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+}
+.over-time {
+  min-width: 64px;
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.over-status {
+  flex: 1;
+  color: var(--text-2);
+}
+.rec-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-width: 170px;
+  height: 52px;
+  padding: 0 var(--s5);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--danger);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  transition: transform 0.1s var(--ease), filter 0.15s var(--ease);
+}
+.rec-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+.rec-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.rec-btn:disabled {
+  opacity: 0.5;
+}
+.rec-btn-stop {
+  background: var(--text);
+  color: var(--bg);
+}
+
 .mix {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -303,6 +441,12 @@
   .studio-export {
     width: 100%;
     margin-left: 0;
+  }
+  .over-controls {
+    flex-wrap: wrap;
+  }
+  .rec-btn {
+    flex: 1;
   }
   .timeline {
     height: 80px;

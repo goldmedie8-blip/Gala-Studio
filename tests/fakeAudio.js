@@ -37,8 +37,36 @@ export class FakeAudioContext {
   createBiquadFilter = () => node()
   createDynamicsCompressor = () => node()
   createBuffer = (channels, length) => ({ getChannelData: () => new Float32Array(length) })
+  createMediaStreamSource = () => node()
+  createAnalyser = () => ({
+    ...node(),
+    fftSize: 0,
+    getFloatTimeDomainData: (buffer) => buffer.fill(0.2),
+  })
+  audioWorklet = { addModule: vi.fn(async () => {}) }
+  baseLatency = 0
+  outputLatency = 0
   // A 2 second "voice" that gets louder, so the waveform has a shape.
   decodeAudioData = vi.fn(async () => fakeVoiceBuffer())
+}
+
+// Stand-in for the capture node. Tests push microphone blocks into it with emit().
+export class FakeWorkletNode {
+  static instances = []
+  constructor() {
+    this.connect = vi.fn((destination) => destination)
+    this.disconnect = vi.fn()
+    this.port = {
+      onmessage: null,
+      postMessage: vi.fn((message) => {
+        if (message === 'stop') queueMicrotask(() => this.port.onmessage?.({ data: { type: 'stopped' } }))
+      }),
+    }
+    FakeWorkletNode.instances.push(this)
+  }
+  emit(frame, data) {
+    this.port.onmessage?.({ data: { frame, data } })
+  }
 }
 
 export function fakeVoiceBuffer(seconds = 2, sampleRate = 44100) {

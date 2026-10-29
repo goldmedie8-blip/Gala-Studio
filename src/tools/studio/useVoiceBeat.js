@@ -6,6 +6,7 @@ import { createMaster, playStep } from '../../engine/playback.js'
 import { Sequencer } from '../../engine/sequencer.js'
 import { bpmFromTaps } from '../../engine/tempo.js'
 import { loadBeat, saveBeat } from '../../storage/beatStore.js'
+import { snapshotFields } from '../../storage/projects.js'
 import { listTakes, saveTake } from '../../storage/takes.js'
 import { PRESETS, getPreset } from '../beats/presets.js'
 
@@ -13,16 +14,16 @@ const RESTART_DELAY_MS = 300
 
 // Everything the Studio tool does: pick a recorded voice, loop the shared beat under it, line the two
 // up (tap tempo, beat start), balance the volumes and export the result. The panel only draws it.
-export function useVoiceBeat() {
+export function useVoiceBeat({ initialProject } = {}) {
   const [takes, setTakes] = useState([])
   const [takesLoaded, setTakesLoaded] = useState(false)
-  const [selectedId, setSelectedId] = useState('')
+  const [selectedId, setSelectedId] = useState(initialProject?.takeId ?? '')
   const [voice, setVoice] = useState(null) // { buffer, peaks }
   const [loadingVoice, setLoadingVoice] = useState(false)
-  const [pattern, setPattern] = useState(() => loadBeat() ?? PRESETS[0].pattern)
-  const [offset, setOffsetState] = useState(0)
-  const [voiceVolume, setVoiceVolume] = useState(1)
-  const [beatVolume, setBeatVolume] = useState(0.6)
+  const [pattern, setPattern] = useState(() => loadBeat() ?? initialProject?.beat ?? PRESETS[0].pattern)
+  const [offset, setOffsetState] = useState(initialProject?.offset ?? 0)
+  const [voiceVolume, setVoiceVolume] = useState(initialProject?.voiceVolume ?? 1)
+  const [beatVolume, setBeatVolume] = useState(initialProject?.beatVolume ?? 0.6)
   const [playing, setPlaying] = useState(false)
   const [position, setPosition] = useState(0)
   const [exporting, setExporting] = useState(false)
@@ -32,9 +33,9 @@ export function useVoiceBeat() {
   voiceRef.current = voice
   const patternRef = useRef(pattern)
   patternRef.current = pattern
-  const offsetRef = useRef(0)
-  const voiceVolRef = useRef(1)
-  const beatVolRef = useRef(0.6)
+  const offsetRef = useRef(initialProject?.offset ?? 0)
+  const voiceVolRef = useRef(initialProject?.voiceVolume ?? 1)
+  const beatVolRef = useRef(initialProject?.beatVolume ?? 0.6)
   const sessionRef = useRef(null)
   const masterRef = useRef(null)
   const progressRef = useRef(0)
@@ -62,6 +63,33 @@ export function useVoiceBeat() {
   }, [])
 
   const selectedTake = useMemo(() => takes.find((t) => t.id === selectedId), [takes, selectedId])
+
+  // Everything about the song that Studio edits. The song card compares this to know when to save.
+  const snapshot = useMemo(() => {
+    const remembered = selectedId && selectedId === initialProject?.takeId ? initialProject : null
+    return snapshotFields({
+      takeId: selectedId,
+      takeName: selectedTake?.name ?? remembered?.takeName ?? '',
+      takeDurationMs: selectedTake?.durationMs ?? remembered?.takeDurationMs ?? 0,
+      beat: pattern,
+      offset,
+      voiceVolume,
+      beatVolume,
+    })
+  }, [selectedId, selectedTake, initialProject, pattern, offset, voiceVolume, beatVolume])
+
+  // A take recorded over a beat remembers that beat's tempo. Choosing it puts the tempo back so the
+  // beat and the voice are still lined up.
+  // An opened song already has its own tempo, so its recording must not overwrite it on the way in.
+  const skipMetaRef = useRef(Boolean(initialProject))
+  useEffect(() => {
+    if (skipMetaRef.current) {
+      if (selectedTake) skipMetaRef.current = false
+      return
+    }
+    const meta = selectedTake?.meta
+    if (meta?.bpm) setPattern((p) => normalizePattern({ ...p, bpm: meta.bpm, swing: meta.swing ?? p.swing }))
+  }, [selectedTake])
 
   useEffect(() => {
     if (!selectedTake) {
@@ -161,6 +189,7 @@ export function useVoiceBeat() {
   const selectTake = useCallback(
     (id) => {
       stop()
+      skipMetaRef.current = false
       setSelectedId(id)
       setOffsetState(0)
       offsetRef.current = 0
@@ -180,6 +209,15 @@ export function useVoiceBeat() {
   }, [])
 
   const nudgeOffset = useCallback((delta) => setOffset(offsetRef.current + delta), [setOffset])
+
+  // A take that was just recorded in Studio: add it to the list and select it, lined up from zero.
+  const addTake = useCallback(
+    (take) => {
+      setTakes((list) => [take, ...list])
+      selectTake(take.id)
+    },
+    [selectTake],
+  )
 
   const setField = useCallback((field, value) => {
     setPattern((p) => normalizePattern({ ...p, [field]: value }))
@@ -280,6 +318,8 @@ export function useVoiceBeat() {
     takes,
     takesLoaded,
     selectedId,
+    selectedTake,
+    snapshot,
     voice,
     loadingVoice,
     pattern,
@@ -303,6 +343,7 @@ export function useVoiceBeat() {
     changeVoiceVolume,
     changeBeatVolume,
     addFile,
+    addTake,
     exportMix,
   }
 }
