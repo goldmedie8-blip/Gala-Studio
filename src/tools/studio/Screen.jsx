@@ -9,6 +9,7 @@ import { nextTakeName } from '../../storage/takes.js'
 import { PRESETS } from '../beats/presets.js'
 import './studio.css'
 import { MAX_SYNC_MS, MIN_SYNC_MS, useBeatRecorder } from './useBeatRecorder.js'
+import { SECTION_LETTERS } from '../../engine/pattern.js'
 import { useProject } from './useProject.js'
 import { useVoiceBeat } from './useVoiceBeat.js'
 
@@ -221,6 +222,11 @@ export default function Screen({ initialProject, onSwitchProject }) {
             </button>
           ))}
         </div>
+
+        <p className="muted hint">
+          Song structure: {pattern.order.map((i) => SECTION_LETTERS[i]).join(' ')} ({pattern.order.length} bars). Change
+          the sections and bars in the Beats tool.
+        </p>
 
         <div className="studio-row">
           <div className="tempo" role="group" aria-label="Tempo">

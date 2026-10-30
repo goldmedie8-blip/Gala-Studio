@@ -50,5 +50,6 @@ export default defineConfig(({ mode }) => ({
     testTimeout: 30000,
     hookTimeout: 30000,
     maxWorkers: 2,
+    pool: 'vmThreads',
   },
 }))

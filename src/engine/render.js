@@ -1,4 +1,4 @@
-import { STEPS } from './pattern.js'
+import { STEPS, arrangementLength } from './pattern.js'
 import { createMaster, playStep } from './playback.js'
 import { stepSeconds, swingDelay } from './sequencer.js'
 import { encodeWav } from './wav.js'
@@ -6,7 +6,8 @@ import { encodeWav } from './wav.js'
 const TAIL_SECONDS = 1.5
 
 // Plays the pattern into an offline audio context (faster than real time) and returns a WAV file.
-export async function renderBeat(pattern, { bars = 4, sampleRate = 44100 } = {}) {
+// With no `bars`, the whole arrangement is rendered once.
+export async function renderBeat(pattern, { bars = arrangementLength(pattern) / STEPS, sampleRate = 44100 } = {}) {
   const OfflineCtx = globalThis.OfflineAudioContext || globalThis.webkitOfflineAudioContext
   if (!OfflineCtx) throw new Error('Exporting audio is not supported in this browser.')
 
@@ -15,11 +16,9 @@ export async function renderBeat(pattern, { bars = 4, sampleRate = 44100 } = {})
   const ctx = new OfflineCtx(2, length, sampleRate)
   const master = createMaster(ctx)
 
-  for (let bar = 0; bar < bars; bar++) {
-    for (let step = 0; step < STEPS; step++) {
-      const time = 0.01 + bar * barSeconds + step * stepSeconds(pattern.bpm) + swingDelay(step, pattern.bpm, pattern.swing)
-      playStep(ctx, master.input, pattern, step, time)
-    }
+  for (let n = 0; n < bars * STEPS; n++) {
+    const time = 0.01 + n * stepSeconds(pattern.bpm) + swingDelay(n, pattern.bpm, pattern.swing)
+    playStep(ctx, master.input, pattern, n, time)
   }
 
   const rendered = await ctx.startRendering()

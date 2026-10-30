@@ -9,6 +9,7 @@ import {
 } from '../../engine/capture.js'
 import { COUNT_IN_BEATS, scheduleCountIn } from '../../engine/countin.js'
 import { levelFromTimeDomain } from '../../engine/level.js'
+import { arrangementLength } from '../../engine/pattern.js'
 import { createMaster, playStep } from '../../engine/playback.js'
 import { friendlyMicError, listInputs, openInput } from '../../engine/recorder.js'
 import { Sequencer } from '../../engine/sequencer.js'
@@ -183,6 +184,7 @@ export function useBeatRecorder({ pattern, beatVolume, nextName, onRecorded, bef
       getTime: () => ctx.currentTime,
       getBpm: () => snapshot.bpm,
       getSwing: () => snapshot.swing,
+      getLength: () => arrangementLength(snapshot),
       play: (step, time) => playStep(ctx, beatBus, snapshot, step, time),
     })
     sequencer.start(beat0)

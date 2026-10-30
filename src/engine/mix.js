@@ -1,6 +1,6 @@
 // Putting a beat under a recorded voice: where each one starts, a picture of the voice,
 // and rendering the two together into one WAV file.
-import { STEPS } from './pattern.js'
+import { arrangementLength } from './pattern.js'
 import { createMaster, playStep } from './playback.js'
 import { stepSeconds, swingDelay } from './sequencer.js'
 import { encodeWav } from './wav.js'
@@ -45,11 +45,12 @@ export function decodeAudioBlob(ctx, blob) {
   return blob.arrayBuffer().then((bytes) => ctx.decodeAudioData(bytes))
 }
 
-// Schedules the beat on any audio context, repeating the 16 steps until `until` (seconds).
+// Schedules the beat on any audio context, repeating the whole arrangement until `until` (seconds).
 export function scheduleBeatRange(ctx, dest, pattern, { start, until }) {
   const step = stepSeconds(pattern.bpm)
+  const length = arrangementLength(pattern)
   for (let n = 0; ; n++) {
-    const s = n % STEPS
+    const s = n % length
     const time = start + n * step + swingDelay(s, pattern.bpm, pattern.swing)
     if (time >= until) break
     playStep(ctx, dest, pattern, s, time)

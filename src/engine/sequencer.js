@@ -9,8 +9,9 @@ export const stepSeconds = (bpm) => 60 / bpm / 4
 export const swingDelay = (step, bpm, swing) => (step % 2 === 1 ? swing * 0.33 * stepSeconds(bpm) : 0)
 
 export class Sequencer {
-  constructor({ getTime, getBpm, getSwing, play, onStep, lookahead = 0.12, interval = 25 }) {
-    Object.assign(this, { getTime, getBpm, getSwing, play, onStep, lookahead, interval })
+  // `getLength` is how many steps one trip through the beat takes (16 for one bar, more for an arrangement).
+  constructor({ getTime, getBpm, getSwing, play, onStep, getLength = () => STEPS, lookahead = 0.12, interval = 25 }) {
+    Object.assign(this, { getTime, getBpm, getSwing, play, onStep, getLength, lookahead, interval })
     this.timer = null
     this.step = 0
     this.nextTime = 0
@@ -31,7 +32,7 @@ export class Sequencer {
       this.play(this.step, time)
       this.onStep?.(this.step, time)
       this.nextTime += stepSeconds(this.getBpm())
-      this.step = (this.step + 1) % STEPS
+      this.step = (this.step + 1) % Math.max(1, this.getLength())
     }
   }
 

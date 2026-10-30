@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getAudioContext, unlockAudio } from '../../engine/audioContext.js'
 import { clampOffset, decodeAudioBlob, peaksFromBuffer, planStart, renderMix } from '../../engine/mix.js'
-import { MAX_BPM, MIN_BPM, normalizePattern } from '../../engine/pattern.js'
+import { MAX_BPM, MIN_BPM, arrangementLength, normalizePattern } from '../../engine/pattern.js'
 import { createMaster, playStep } from '../../engine/playback.js'
 import { Sequencer } from '../../engine/sequencer.js'
 import { bpmFromTaps } from '../../engine/tempo.js'
@@ -166,6 +166,7 @@ export function useVoiceBeat({ initialProject } = {}) {
         getTime: () => ctx.currentTime,
         getBpm: () => patternRef.current.bpm,
         getSwing: () => patternRef.current.swing,
+        getLength: () => arrangementLength(patternRef.current),
         play: (step, time) => playStep(ctx, beatBus, patternRef.current, step, time),
       })
 

@@ -1,8 +1,9 @@
 import { Icon } from '../../design/Icon.jsx'
 import { TempoInput } from '../../design/TempoInput.jsx'
-import { DRUM_LANES, STEPS } from '../../engine/pattern.js'
+import { useState } from 'react'
+import { DRUM_LANES, MAX_BARS, SECTION_LETTERS, SECTION_NAMES, STEPS } from '../../engine/pattern.js'
 import { KEYS, MELODY_ROWS, SCALES, degreeToMidi, noteName } from '../../engine/scale.js'
-import { SOUNDS } from '../../engine/voices.js'
+import { BASS_SOUND_IDS, SOUNDS } from '../../engine/voices.js'
 import './beats.css'
 import { PRESETS } from './presets.js'
 import { useBeatMachine } from './useBeatMachine.js'
@@ -27,8 +28,16 @@ function StepCell({ on, active, beat, label, onClick }) {
 
 export default function Panel() {
   const beat = useBeatMachine()
-  const { pattern } = beat
-  const sound = SOUNDS[pattern.sound]
+  const { pattern, playhead } = beat
+  const [track, setTrack] = useState('melody') // which notes grid is open: 'melody' or 'bass'
+  const isBass = track === 'bass'
+  const soundId = isBass ? pattern.bassSound : pattern.sound
+  const sound = SOUNDS[soundId]
+  const soundOptions = isBass ? BASS_SOUND_IDS : Object.keys(SOUNDS)
+  const notes = pattern[track]
+  const notePrefix = isBass ? 'Bass ' : ''
+  // The step lights up only while the section you are looking at is the one being heard.
+  const lit = (i) => playhead?.index === pattern.active && playhead.local === i
 
   return (
     <div className="beats">
@@ -52,6 +61,15 @@ export default function Panel() {
           </label>
           <button type="button" className="icon-btn" aria-label="Faster" onClick={() => beat.nudgeTempo(1)}>
             <Icon name="plus" size={18} />
+          </button>
+        </div>
+
+        <div className="seg" role="group" aria-label="What to play">
+          <button type="button" aria-pressed={beat.playMode === 'section'} onClick={() => beat.setPlayMode('section')}>
+            Loop section
+          </button>
+          <button type="button" aria-pressed={beat.playMode === 'song'} onClick={() => beat.setPlayMode('song')}>
+            Whole song
           </button>
         </div>
 
@@ -99,6 +117,83 @@ export default function Panel() {
         </div>
       </section>
 
+      <section className="card" aria-labelledby="structure-heading">
+        <h2 id="structure-heading" className="section-title">
+          Song structure
+        </h2>
+        <div className="structure-row">
+          <div className="seg" role="group" aria-label="Section you are editing">
+            {SECTION_LETTERS.map((letter, i) => (
+              <button
+                key={letter}
+                type="button"
+                aria-pressed={pattern.active === i}
+                aria-label={`Edit section ${letter}, ${SECTION_NAMES[i]}`}
+                onClick={() => beat.selectSection(i)}
+              >
+                <strong>{letter}</strong> {SECTION_NAMES[i]}
+              </button>
+            ))}
+          </div>
+          <div className="field">
+            <label htmlFor="copy-from">Copy a section into this one</label>
+            <select
+              id="copy-from"
+              value=""
+              onChange={(e) => e.target.value !== '' && beat.copyFromSection(Number(e.target.value))}
+            >
+              <option value="">Choose a section...</option>
+              {SECTION_LETTERS.map((letter, i) =>
+                i === pattern.active ? null : (
+                  <option key={letter} value={i}>
+                    {letter} {SECTION_NAMES[i]}
+                  </option>
+                ),
+              )}
+            </select>
+          </div>
+        </div>
+
+        <div className="bars-row">
+          <div className="bars" role="group" aria-label="Arrangement">
+            {pattern.order.map((index, bar) => (
+              <button
+                key={bar}
+                type="button"
+                className="bar-chip"
+                data-playing={playhead?.bar === bar}
+                aria-label={`Bar ${bar + 1}: section ${SECTION_LETTERS[index]}. Press to change.`}
+                onClick={() => beat.setBar(bar, (index + 1) % SECTION_LETTERS.length)}
+              >
+                {SECTION_LETTERS[index]}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label="Remove last bar"
+            disabled={pattern.order.length <= 1}
+            onClick={beat.removeBar}
+          >
+            <Icon name="minus" size={18} />
+          </button>
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label="Add bar"
+            disabled={pattern.order.length >= MAX_BARS}
+            onClick={beat.addBar}
+          >
+            <Icon name="plus" size={18} />
+          </button>
+        </div>
+        <p className="muted hint">
+          Edit one section at a time, then press a bar to choose which section plays there. Choose Whole song to hear
+          the arrangement from start to end.
+        </p>
+      </section>
+
       <section className="card" aria-labelledby="drums-heading">
         <h2 id="drums-heading" className="section-title">
           Drums
@@ -114,7 +209,7 @@ export default function Panel() {
                   <StepCell
                     key={i}
                     on={pattern.drums[lane.id][i]}
-                    active={beat.step === i}
+                    active={lit(i)}
                     beat={i % 4 === 0}
                     label={`${lane.name} step ${i + 1}`}
                     onClick={() => beat.toggleStep(lane.id, i)}
@@ -128,38 +223,50 @@ export default function Panel() {
 
       <section className="card" aria-labelledby="melody-heading">
         <div className="melody-head">
-          <h2 id="melody-heading">Melody</h2>
-          <div className="melody-settings">
-            <div className="field">
-              <label htmlFor="beat-sound">Sound</label>
-              <select id="beat-sound" value={pattern.sound} onChange={(e) => beat.setField('sound', e.target.value)}>
-                {Object.entries(SOUNDS).map(([id, s]) => (
-                  <option key={id} value={id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
-              <label htmlFor="beat-key">Key</label>
-              <select id="beat-key" value={pattern.key} onChange={(e) => beat.setField('key', Number(e.target.value))}>
-                {KEYS.map((k, i) => (
-                  <option key={k} value={i}>
-                    {k}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
-              <label htmlFor="beat-scale">Scale</label>
-              <select id="beat-scale" value={pattern.scale} onChange={(e) => beat.setField('scale', e.target.value)}>
-                {Object.entries(SCALES).map(([id, s]) => (
-                  <option key={id} value={id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <h2 id="melody-heading">Notes</h2>
+          <div className="seg" role="group" aria-label="Notes line">
+            <button type="button" aria-pressed={!isBass} onClick={() => setTrack('melody')}>
+              Melody
+            </button>
+            <button type="button" aria-pressed={isBass} onClick={() => setTrack('bass')}>
+              Bass
+            </button>
+          </div>
+        </div>
+        <div className="melody-settings">
+          <div className="field">
+            <label htmlFor="beat-sound">Sound</label>
+            <select
+              id="beat-sound"
+              value={soundId}
+              onChange={(e) => beat.setField(isBass ? 'bassSound' : 'sound', e.target.value)}
+            >
+              {soundOptions.map((id) => (
+                <option key={id} value={id}>
+                  {SOUNDS[id].name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="beat-key">Key</label>
+            <select id="beat-key" value={pattern.key} onChange={(e) => beat.setField('key', Number(e.target.value))}>
+              {KEYS.map((k, i) => (
+                <option key={k} value={i}>
+                  {k}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="beat-scale">Scale</label>
+            <select id="beat-scale" value={pattern.scale} onChange={(e) => beat.setField('scale', e.target.value)}>
+              {Object.entries(SCALES).map(([id, s]) => (
+                <option key={id} value={id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -169,15 +276,15 @@ export default function Panel() {
             return (
               <div key={degree} className="lane">
                 <span className="lane-name lane-note">{name}</span>
-                <div className="cells" role="group" aria-label={`Note ${name} steps`}>
+                <div className="cells" role="group" aria-label={isBass ? `Bass note ${name} steps` : `Note ${name} steps`}>
                   {STEP_INDEXES.map((i) => (
                     <StepCell
                       key={i}
-                      on={pattern.melody[i] === degree}
-                      active={beat.step === i}
+                      on={notes[i] === degree}
+                      active={lit(i)}
                       beat={i % 4 === 0}
-                      label={`${name} step ${i + 1}`}
-                      onClick={() => beat.toggleNote(i, degree)}
+                      label={`${notePrefix}${name} step ${i + 1}`}
+                      onClick={() => beat.toggleNote(i, degree, track)}
                     />
                   ))}
                 </div>

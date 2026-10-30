@@ -69,6 +69,22 @@ export const DRUMS = {
   perc(ctx, dest, time) {
     toneHit(ctx, dest, time, { from: 900, to: 420, drop: 0.07, duration: 0.14, gain: 0.55 })
   },
+  rim(ctx, dest, time) {
+    toneHit(ctx, dest, time, { type: 'triangle', from: 1700, to: 1100, drop: 0.012, duration: 0.05, gain: 0.45 })
+    noiseHit(ctx, dest, time, { type: 'bandpass', frequency: 3500, q: 2, duration: 0.03, gain: 0.3 })
+  },
+  shaker(ctx, dest, time) {
+    noiseHit(ctx, dest, time, { type: 'bandpass', frequency: 6500, q: 0.7, duration: 0.07, gain: 0.2 })
+  },
+  conga(ctx, dest, time) {
+    toneHit(ctx, dest, time, { from: 340, to: 250, drop: 0.05, duration: 0.22, gain: 0.7 })
+    noiseHit(ctx, dest, time, { type: 'bandpass', frequency: 1200, q: 1, duration: 0.02, gain: 0.15 })
+  },
+  cowbell(ctx, dest, time) {
+    for (const frequency of [560, 845]) {
+      toneHit(ctx, dest, time, { type: 'square', from: frequency, to: frequency, drop: 0.01, duration: 0.22, gain: 0.1 })
+    }
+  },
 }
 
 // Melodic sounds. octave is the base octave of the bottom row of the melody grid.
@@ -77,7 +93,14 @@ export const SOUNDS = {
   '808': { name: '808 sub', octave: 1, type: 'sine', cutoff: 1200, attack: 0.004, release: 0.45, gain: 0.9, glide: 2 },
   keys: { name: 'Keys', octave: 4, type: 'triangle', cutoff: 3200, attack: 0.008, release: 0.35, gain: 0.45 },
   lead: { name: 'Lead', octave: 5, type: 'square', cutoff: 3800, attack: 0.01, release: 0.2, gain: 0.22 },
+  pluck: { name: 'Pluck', octave: 4, type: 'sawtooth', cutoff: 2400, attack: 0.003, release: 0.14, gain: 0.3 },
+  pad: { name: 'Pad', octave: 3, type: 'sawtooth', cutoff: 1500, attack: 0.1, release: 0.6, gain: 0.2, hold: 3.5 },
+  bell: { name: 'Bell', octave: 5, type: 'sine', cutoff: 5000, attack: 0.002, release: 0.9, gain: 0.4 },
+  sub: { name: 'Sub bass', octave: 2, type: 'sine', cutoff: 500, attack: 0.01, release: 0.25, gain: 0.9 },
 }
+
+// Sounds that are made for the bass line; any sound can still be used for the melody.
+export const BASS_SOUND_IDS = ['bass', '808', 'sub']
 
 export function synthNote(ctx, dest, time, frequency, duration, soundId) {
   const sound = SOUNDS[soundId]

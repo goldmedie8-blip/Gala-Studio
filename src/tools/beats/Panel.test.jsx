@@ -113,7 +113,7 @@ describe('Beats panel', () => {
     render(<Panel />)
     await user.click(screen.getByRole('button', { name: 'Trap' }))
     expect(screen.getByLabelText('Tempo in beats per minute')).toHaveValue(140)
-    expect(screen.getByLabelText('Sound')).toHaveValue('808')
+    expect(screen.getByLabelText('Sound')).toHaveValue('bell')
   })
 
   test('play starts the beat and stop ends it', async () => {
