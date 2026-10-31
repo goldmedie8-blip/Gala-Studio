@@ -1,0 +1,194 @@
+/* Self-contained on purpose: beats.css only loads with the Beats panel, so shared bits are repeated here
+   under .lyrics. When a third tool needs them, move .field, .chip-btn and .presets into design/components.css. */
+.lyrics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+
+.lyrics .field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+.lyrics .field label {
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.lyrics .field input,
+.lyrics .field select {
+  height: 40px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.ly-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s4) var(--s5);
+}
+.ly-title-field {
+  flex: 1;
+  min-width: 220px;
+}
+.ly-actions {
+  display: flex;
+  gap: var(--s2);
+  margin-left: auto;
+}
+
+.ly-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+.ly-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+.ly-section-name {
+  margin: 0;
+}
+.ly-section-tools {
+  display: flex;
+  gap: var(--s1);
+}
+
+.ly-chords,
+.ly-text {
+  width: 100%;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.ly-chords {
+  height: 40px;
+  padding: 0 var(--s3);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 600;
+  color: var(--accent);
+}
+.ly-text {
+  padding: var(--s3);
+  font-size: 17px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.ly-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ly-line {
+  display: grid;
+  grid-template-columns: 28px 52px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--s2);
+  padding: 2px 0;
+  font-size: 13px;
+}
+.ly-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-3);
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 700;
+}
+.ly-line[data-rhymes='true'] .ly-letter {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.ly-count {
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.ly-line-text {
+  overflow: hidden;
+  color: var(--text-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lyrics .presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.lyrics .chip-btn {
+  height: 36px;
+  padding: 0 var(--s4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 600;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.lyrics .chip-btn:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--accent);
+}
+
+.ly-sub {
+  margin: var(--s4) 0 var(--s2);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ly-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ly-chip {
+  padding: 4px var(--s3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.ly-chip-mine {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.lyrics .hint {
+  margin-top: var(--s3);
+  font-size: 13px;
+}
+
+@media (max-width: 860px) {
+  .ly-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+  .ly-actions .btn {
+    flex: 1;
+  }
+  .ly-text {
+    font-size: 16px;
+  }
+}

@@ -20,6 +20,7 @@ function node() {
     Q: param(),
     threshold: param(),
     ratio: param(),
+    pan: param(),
   }
 }
 
@@ -35,6 +36,8 @@ export class FakeAudioContext {
   createOscillator = () => node()
   createBufferSource = () => node()
   createBiquadFilter = () => node()
+  createStereoPanner = () => node()
+  createConvolver = () => node()
   createDynamicsCompressor = () => node()
   createBuffer = (channels, length) => ({ getChannelData: () => new Float32Array(length) })
   createMediaStreamSource = () => node()

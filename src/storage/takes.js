@@ -62,6 +62,12 @@ export async function importTake({ id, name, mimeType, durationMs, createdAt, me
   await run('readwrite', (store) => store.put(row))
 }
 
+// One recording by id, or undefined if it is gone.
+export async function getTake(id) {
+  const row = await run('readonly', (store) => store.get(id))
+  return row ? toTake(row) : undefined
+}
+
 export async function listTakes() {
   const rows = await run('readonly', (store) => store.getAll())
   return rows.sort((a, b) => b.createdAt - a.createdAt).map(toTake)

@@ -7,11 +7,13 @@ export default defineTool({
   path: '/lyrics',
   stage: 5,
   order: 40,
-  summary: 'Write verses and hooks, then sync them to the beat.',
+  component: () => import('./Panel.jsx'),
+  summary: 'Write verses and hooks with syllable counts and rhyme help.',
   features: [
-    'Sections for verse, hook and bridge',
-    'Syllable and rhyme helpers',
-    'Chord sheet alongside the words',
-    'Lines synced to the timeline',
+    'Sections for intro, verse, hook, bridge and outro',
+    'Syllable count and rhyme letter on every line',
+    'Rhyme finder for English, Luganda and Swahili',
+    'Chords alongside the words',
+    'Export as a text file',
   ],
 })

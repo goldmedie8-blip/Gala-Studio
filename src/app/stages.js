@@ -3,7 +3,7 @@
 export const STAGES = [
   { stage: 0, name: 'Foundation', summary: 'App shell, design system, offline support and tests', done: true },
   { stage: 1, name: 'Projects and storage', summary: 'Create, save, back up and restore projects on the device', done: true },
-  { stage: 2, name: 'Audio engine', summary: 'Transport, multitrack timeline and mixer', done: false },
+  { stage: 2, name: 'Audio engine', summary: 'Transport, multitrack timeline and mixer', done: true },
   { stage: 3, name: 'Recording', summary: 'Microphone and guitar capture with latency correction', done: false },
   { stage: 4, name: 'Beats and instruments', summary: 'Sequencer, drum pads, piano roll and sample library', done: false },
   { stage: 5, name: 'Lyrics and songwriting', summary: 'Lyrics editor, chords and rhyme helpers', done: false },

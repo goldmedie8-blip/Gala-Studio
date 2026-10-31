@@ -4,6 +4,7 @@
 // never crash the app.
 import { clampOffset } from '../engine/mix.js'
 import { normalizePattern } from '../engine/pattern.js'
+import { deleteTimeline } from './timelines.js'
 
 const DB_NAME = 'gala-projects'
 const STORE = 'projects'
@@ -124,6 +125,7 @@ export async function listProjects() {
 
 export async function deleteProject(id) {
   await run('readwrite', (store) => store.delete(id))
+  await deleteTimeline(id).catch(() => {}) // its multitrack layout goes with it
   if (getCurrentProjectId() === id) setCurrentProjectId(null)
 }
 

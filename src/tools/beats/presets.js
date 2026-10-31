@@ -7,6 +7,7 @@
 // the key, higher climbs the scale), "." is a rest. In sections B to D anything left out is taken from
 // section A, and "-" clears it.
 import { DRUM_LANES, SECTION_COUNT, STEPS, emptyPattern, normalizePattern } from '../../engine/pattern.js'
+import { WORLD_SPECS } from './presets.world.js'
 
 const LANE_IDS = DRUM_LANES.map((lane) => lane.id)
 const LETTERS = ['A', 'B', 'C', 'D']
@@ -408,6 +409,7 @@ export const PRESETS = [
       bass: '0 . . 0 . . 0 . 3 . . 3 . . 4 .',
     },
   }),
+  ...WORLD_SPECS.map(([id, name, spec]) => preset(id, name, spec)),
 ]
 
 export const getPreset = (id) => PRESETS.find((p) => p.id === id)

@@ -6,16 +6,18 @@
 //   audio bytes       every recording one after another, in manifest order
 import { importTake, listTakes } from './takes.js'
 import { listProjects, normalizeProject, putProject } from './projects.js'
+import { listTimelines, saveTimeline } from './timelines.js'
 
 const MAGIC = 'GALABACKUP1\n'
 const encoder = new TextEncoder()
 
 export async function buildBackup() {
-  const [projects, takes] = await Promise.all([listProjects(), listTakes()])
+  const [projects, takes, timelines] = await Promise.all([listProjects(), listTakes(), listTimelines()])
   const manifest = {
     version: 1,
     createdAt: Date.now(),
     projects,
+    timelines: timelines.filter((t) => projects.some((p) => p.id === t.projectId)),
     takes: takes.map(({ id, name, mimeType, durationMs, createdAt, meta, blob }) => ({
       id,
       name,
@@ -62,6 +64,7 @@ export async function restoreBackup(file) {
   }
   const takes = Array.isArray(manifest?.takes) ? manifest.takes : []
   const projects = Array.isArray(manifest?.projects) ? manifest.projects : []
+  const timelines = Array.isArray(manifest?.timelines) ? manifest.timelines : []
 
   // Check the audio is all there before changing anything on the device.
   let offset = jsonStart + jsonLength
@@ -89,6 +92,10 @@ export async function restoreBackup(file) {
   let restored = 0
   for (const project of projects) {
     if (normalizeProject(project) && (await putProject(project))) restored += 1
+  }
+  // Older backups have no timelines. Newer ones bring back each song's multitrack layout too.
+  for (const row of timelines) {
+    if (typeof row?.projectId === 'string') await saveTimeline(row.projectId, row.timeline)
   }
   return { projects: restored, takes: parts.length }
 }
