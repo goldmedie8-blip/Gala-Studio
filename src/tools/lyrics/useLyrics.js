@@ -1,41 +1,34 @@
 import { useCallback, useEffect, useState } from 'react'
-import {
-  addSection,
-  defaultSong,
-  exportText,
-  moveSection,
-  normalizeSong,
-  removeSection,
-  updateSection,
-} from '../../engine/lyrics.js'
-
-const STORAGE_KEY = 'gala.lyrics.v1'
-
-function loadSong() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) return normalizeSong(JSON.parse(saved))
-  } catch {
-    // unreadable save, start fresh
-  }
-  return defaultSong()
-}
+import { addSection, exportText, moveSection, normalizeSong, removeSection, updateSection } from '../../engine/lyrics.js'
+import { loadLyrics, saveLyrics } from '../../storage/lyricsStore.js'
+import { getCurrentProjectId, getProject } from '../../storage/projects.js'
 
 const fileName = (title) =>
   `${title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'lyrics'}.txt`
 
-// Everything the Lyrics tool does: edit the song, remember it on the device and export it as text.
-// The panel only draws the result.
+// Everything the Lyrics tool does: edit the lyrics of the song you are working on in Studio, remember them on
+// the device and export them as text. With no saved song yet, you are writing a draft that moves into the
+// first song you save. The panel only draws the result.
 export function useLyrics() {
-  const [song, setSong] = useState(loadSong)
+  const [projectId] = useState(getCurrentProjectId) // the song open in Studio when you came here
+  const [song, setSong] = useState(() => loadLyrics(projectId))
+  const [songName, setSongName] = useState('')
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(song))
-    } catch {
-      // storage full or blocked: the words stay on screen, they just will not be remembered
+    if (!projectId) return undefined
+    let alive = true
+    Promise.resolve()
+      .then(() => getProject(projectId))
+      .then((project) => alive && project && setSongName(project.name))
+      .catch(() => {}) // the name is only a label
+    return () => {
+      alive = false
     }
-  }, [song])
+  }, [projectId])
+
+  useEffect(() => {
+    saveLyrics(projectId, song) // if the device refuses, the words stay on screen, they just will not be remembered
+  }, [projectId, song])
 
   const setTitle = useCallback((title) => setSong((s) => normalizeSong({ ...s, title })), [])
   const setLanguage = useCallback((language) => setSong((s) => normalizeSong({ ...s, language })), [])
@@ -56,5 +49,9 @@ export function useLyrics() {
     setTimeout(() => URL.revokeObjectURL(url), 10_000)
   }, [song])
 
-  return { song, setTitle, setLanguage, add, remove, move, edit, exportTxt }
+  const attachedTo = projectId
+    ? `Writing the lyrics for ${songName ? `"${songName}"` : 'your current song'}.`
+    : 'A draft, not attached to a song yet. Save a song in Studio and these lyrics go with it.'
+
+  return { song, attachedTo, setTitle, setLanguage, add, remove, move, edit, exportTxt }
 }

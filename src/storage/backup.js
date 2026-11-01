@@ -7,6 +7,7 @@
 import { importTake, listTakes } from './takes.js'
 import { listProjects, normalizeProject, putProject } from './projects.js'
 import { listTimelines, saveTimeline } from './timelines.js'
+import { exportLyrics, importLyrics } from './lyricsStore.js'
 
 const MAGIC = 'GALABACKUP1\n'
 const encoder = new TextEncoder()
@@ -18,6 +19,7 @@ export async function buildBackup() {
     createdAt: Date.now(),
     projects,
     timelines: timelines.filter((t) => projects.some((p) => p.id === t.projectId)),
+    lyrics: exportLyrics(projects.map((p) => p.id)),
     takes: takes.map(({ id, name, mimeType, durationMs, createdAt, meta, blob }) => ({
       id,
       name,
@@ -65,6 +67,7 @@ export async function restoreBackup(file) {
   const takes = Array.isArray(manifest?.takes) ? manifest.takes : []
   const projects = Array.isArray(manifest?.projects) ? manifest.projects : []
   const timelines = Array.isArray(manifest?.timelines) ? manifest.timelines : []
+  const lyrics = Array.isArray(manifest?.lyrics) ? manifest.lyrics : []
 
   // Check the audio is all there before changing anything on the device.
   let offset = jsonStart + jsonLength
@@ -96,6 +99,10 @@ export async function restoreBackup(file) {
   // Older backups have no timelines. Newer ones bring back each song's multitrack layout too.
   for (const row of timelines) {
     if (typeof row?.projectId === 'string') await saveTimeline(row.projectId, row.timeline)
+  }
+  // Restore lyrics for each project
+  for (const lyric of lyrics) {
+    await importLyrics(lyric)
   }
   return { projects: restored, takes: parts.length }
 }

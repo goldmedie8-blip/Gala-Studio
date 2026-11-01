@@ -155,6 +155,7 @@ export default function Panel() {
   return (
     <div className="lyrics">
       <section className="card ly-top" aria-label="Song details">
+        <p className="muted ly-attached">{lyrics.attachedTo}</p>
         <div className="field ly-title-field">
           <label htmlFor="song-title">Song title</label>
           <input

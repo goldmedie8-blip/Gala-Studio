@@ -113,4 +113,28 @@ describe('Lyrics panel', () => {
     expect(blob.type).toBe('text/plain')
     expect(await blob.text()).toContain('[Verse 1]\nfirst line')
   })
+
+  test('with no saved song it says you are writing a draft', () => {
+    render(<Panel />)
+    expect(screen.getByText(/A draft, not attached to a song yet/)).toBeInTheDocument()
+  })
+
+  test('the lyrics are those of the song open in Studio, not the draft', () => {
+    const sections = (text) => [{ id: 'a', type: 'verse', text, chords: '' }]
+    localStorage.setItem('gala.currentProject.v1', 'p1')
+    localStorage.setItem('gala.lyrics.v1.p1', JSON.stringify({ title: '', language: 'english', sections: sections('belongs to p1') }))
+    localStorage.setItem('gala.lyrics.v1', JSON.stringify({ title: '', language: 'english', sections: sections('just a draft') }))
+    render(<Panel />)
+    expect(screen.getByLabelText('Verse lyrics')).toHaveValue('belongs to p1')
+    expect(screen.getByText(/Writing the lyrics for your current song/)).toBeInTheDocument()
+  })
+
+  test('typing saves under the song, leaving the draft alone', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem('gala.currentProject.v1', 'p1')
+    render(<Panel />)
+    await user.type(screen.getByLabelText('Verse 1 lyrics'), 'hello')
+    expect(JSON.parse(localStorage.getItem('gala.lyrics.v1.p1')).sections[0].text).toBe('hello')
+    expect(localStorage.getItem('gala.lyrics.v1')).toBe(null)
+  })
 })

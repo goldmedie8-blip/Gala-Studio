@@ -34,6 +34,10 @@
   align-items: flex-end;
   gap: var(--s4) var(--s5);
 }
+.ly-attached {
+  flex-basis: 100%;
+  margin: 0;
+}
 .ly-title-field {
   flex: 1;
   min-width: 220px;
