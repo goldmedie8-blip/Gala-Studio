@@ -1,0 +1,36 @@
+# Runs Gala Studio's tests (and a build) on GitHub's own computers every time you push,
+# so your laptop does not have to run the whole suite.
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+# If you push again while a run is still going, the older run is stopped.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install packages
+        run: npm ci
+
+      - name: Run the tests
+        run: npm test
+
+      # Catches mistakes that only show up when the app is built for the web. Skipped if you have no build script.
+      - name: Build the app
+        run: npm run build --if-present
