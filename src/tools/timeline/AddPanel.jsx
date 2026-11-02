@@ -27,6 +27,10 @@ export function AddPanel({ t }) {
               <Icon name="plus" size={18} />
               Add audio track
             </button>
+            <button type="button" className="btn btn-secondary" onClick={() => t.addNewTrack('piano')}>
+              <Icon name="plus" size={18} />
+              Add piano track
+            </button>
           </div>
         </div>
 

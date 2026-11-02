@@ -14,7 +14,7 @@ function TrackHeader({ track, t }) {
   return (
     <div className="tl-header" data-selected={selected} onClick={() => t.selectTrack(track.id)}>
       <div className="tl-header-top">
-        <Icon name={track.kind === 'beat' ? 'drum' : 'mic'} size={16} />
+        <Icon name={track.kind === 'beat' ? 'drum' : track.kind === 'piano' ? 'piano' : 'mic'} size={16} />
         <input
           className="tl-name"
           type="text"
@@ -121,7 +121,7 @@ export function TimelineView({ t }) {
               >
                 {loop.on && <span className="tl-loop" style={{ left: timeToPx(loop.start, pps), width: timeToPx(loop.end - loop.start, pps) }} />}
                 {track.clips.length === 0 && (
-                  <span className="tl-lane-hint">{track.kind === 'beat' ? 'Add a beat here' : 'Add a recording here'}</span>
+                  <span className="tl-lane-hint">{track.kind === 'beat' ? 'Add a beat here' : track.kind === 'piano' ? 'Play on Piano, then save it to this song' : 'Add a recording here'}</span>
                 )}
                 {track.clips.map((clip) => (
                   <ClipView key={clip.id} clip={clip} track={track} t={t} />

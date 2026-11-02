@@ -1,4 +1,5 @@
 import { DRUM_LANES, locateStep } from './pattern.js'
+import { getSample, playSample } from './drumKit.js'
 import { degreeToMidi, midiToFrequency } from './scale.js'
 import { stepSeconds } from './sequencer.js'
 import { DRUMS, SOUNDS, synthNote } from './voices.js'
@@ -16,7 +17,10 @@ export function createMaster(ctx) {
 }
 
 export function playDrum(ctx, dest, laneId, time) {
-  DRUMS[laneId](ctx, dest, time)
+  // Your own recording for this drum, if you chose one in My sounds. Otherwise the built-in sound.
+  const mine = getSample(laneId)
+  if (mine) playSample(ctx, dest, mine, time)
+  else DRUMS[laneId](ctx, dest, time)
 }
 
 // `track` is 'melody' or 'bass': each has its own sound.

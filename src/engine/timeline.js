@@ -6,6 +6,7 @@
 // three-band EQ and reverb send, which the mixer applies.
 import { clampOffset, planStart } from './mix.js'
 import { STEPS, normalizePattern } from './pattern.js'
+import { normalizeNotes } from './notes.js'
 import { stepSeconds } from './sequencer.js'
 
 export const MAX_TRACKS = 12
@@ -15,6 +16,11 @@ export const MIN_CLIP_SECONDS = 0.05
 export const MAX_VOLUME = 1.5
 export const EQ_RANGE = 12 // dB, each way
 export const MAX_TIME = 60 * 60 // an hour
+
+const KINDS = ['audio', 'beat', 'piano']
+const kindOf = (kind) => (KINDS.includes(kind) ? kind : 'audio')
+const KIND_LABEL = { audio: 'Audio', beat: 'Beat', piano: 'Piano' }
+const mod = (n, m) => ((n % m) + m) % m
 
 export const newId = () =>
   globalThis.crypto?.randomUUID?.() ?? `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
@@ -43,8 +49,8 @@ export function emptyTimeline(bpm = 100) {
 export function emptyTrack(kind, name, id = newId()) {
   return {
     id,
-    name: name ?? (kind === 'beat' ? 'Beat' : 'Audio'),
-    kind: kind === 'beat' ? 'beat' : 'audio',
+    name: name ?? KIND_LABEL[kindOf(kind)],
+    kind: kindOf(kind),
     volume: 1,
     pan: 0,
     mute: false,
@@ -60,7 +66,21 @@ export function emptyTrack(kind, name, id = newId()) {
 function normalizeClip(raw, kind) {
   if (!raw || typeof raw !== 'object' || typeof raw.id !== 'string') return null
   const start = round3(clamp(raw.start, 0, MAX_TIME, 0))
-  const name = text(raw.name, kind === 'beat' ? 'Beat' : 'Recording', 60)
+  const name = text(raw.name, kind === 'beat' ? 'Beat' : kind === 'piano' ? 'Piano part' : 'Recording', 60)
+  if (kind === 'piano') {
+    const bars = Math.round(clamp(raw.bars, 1, MAX_BEAT_BARS, 1))
+    const loopBars = Math.round(clamp(raw.loopBars, 1, MAX_BEAT_BARS, bars))
+    return {
+      id: raw.id,
+      name,
+      start,
+      bars,
+      loopBars,
+      shift: mod(Math.round(clamp(raw.shift, -MAX_BEAT_BARS, MAX_BEAT_BARS, 0)), loopBars),
+      sound: typeof raw.sound === 'string' ? raw.sound.slice(0, 20) : 'piano',
+      notes: normalizeNotes(raw.notes, loopBars),
+    }
+  }
   if (kind === 'beat') {
     return {
       id: raw.id,
@@ -87,7 +107,7 @@ function normalizeClip(raw, kind) {
 
 function normalizeTrack(raw) {
   if (!raw || typeof raw !== 'object' || typeof raw.id !== 'string') return null
-  const kind = raw.kind === 'beat' ? 'beat' : 'audio'
+  const kind = kindOf(raw.kind)
   const seen = new Set()
   const clips = (Array.isArray(raw.clips) ? raw.clips : [])
     .map((c) => normalizeClip(c, kind))
@@ -95,7 +115,7 @@ function normalizeTrack(raw) {
     .slice(0, MAX_CLIPS_PER_TRACK)
   return {
     id: raw.id,
-    name: text(raw.name, kind === 'beat' ? 'Beat' : 'Audio', 40),
+    name: text(raw.name, KIND_LABEL[kind], 40),
     kind,
     volume: clamp(raw.volume, 0, MAX_VOLUME, 1),
     pan: clamp(raw.pan, -1, 1, 0),
@@ -196,8 +216,8 @@ export function setLoop(timeline, patch) {
 
 export function addTrack(timeline, { kind = 'audio', name, id = newId() } = {}) {
   if (timeline.tracks.length >= MAX_TRACKS) return timeline
-  const sameKind = timeline.tracks.filter((t) => t.kind === (kind === 'beat' ? 'beat' : 'audio')).length
-  const label = name ?? `${kind === 'beat' ? 'Beat' : 'Audio'} ${sameKind + 1}`
+  const sameKind = timeline.tracks.filter((t) => t.kind === kindOf(kind)).length
+  const label = name ?? `${KIND_LABEL[kindOf(kind)]} ${sameKind + 1}`
   return { ...timeline, tracks: [...timeline.tracks, emptyTrack(kind, label, id)] }
 }
 
@@ -240,6 +260,15 @@ export function addBeatClip(timeline, trackId, { name, start = 0, bars = 4, patt
   return mapTrack(timeline, trackId, (t) => ({ ...t, clips: [...t.clips, clip] }))
 }
 
+// A recorded keyboard part. `notes` are in beats from the start of the part, which is `loopBars` long and
+// repeats to fill `bars`.
+export function addPianoClip(timeline, trackId, { name, start = 0, bars = 4, loopBars, notes = [], sound = 'piano', id = newId() }) {
+  const track = timeline.tracks.find((t) => t.id === trackId)
+  if (!track || track.kind !== 'piano' || track.clips.length >= MAX_CLIPS_PER_TRACK) return timeline
+  const clip = normalizeClip({ id, name, start, bars, loopBars: loopBars ?? bars, notes, sound }, 'piano')
+  return mapTrack(timeline, trackId, (t) => ({ ...t, clips: [...t.clips, clip] }))
+}
+
 // Moves a clip to a new start time, and optionally onto another track of the same kind.
 export function moveClip(timeline, clipId, { start, trackId } = {}) {
   const found = findClip(timeline, clipId)
@@ -267,7 +296,12 @@ export function trimClipStart(timeline, clipId, newStart) {
     const bar = barSeconds(timeline.bpm)
     const bars = Math.round((newStart - clip.start) / bar)
     const change = Math.min(clip.bars - 1, Math.max(-Math.floor(clip.start / bar), bars))
-    return mapClip(timeline, clipId, (c) => ({ ...c, start: round3(c.start + change * bar), bars: c.bars - change }))
+    return mapClip(timeline, clipId, (c) => ({
+      ...c,
+      start: round3(c.start + change * bar),
+      bars: c.bars - change,
+      ...(c.notes ? { shift: mod(c.shift + change, c.loopBars) } : {}),
+    }))
   }
   const end = clip.start + clip.length
   const delta = clamp(newStart - clip.start, -Math.min(clip.offset, clip.start), clip.length - MIN_CLIP_SECONDS, 0)
@@ -305,6 +339,7 @@ export function splitClip(timeline, clipId, at, newId_ = newId()) {
     if (k < 1 || k > clip.bars - 1) return timeline
     left = { ...clip, bars: k }
     right = { ...clip, id: newId_, start: round3(clip.start + k * bar), bars: clip.bars - k }
+    if (clip.notes) right.shift = mod(clip.shift + k, clip.loopBars)
   } else {
     const cut = at - clip.start
     if (cut < MIN_CLIP_SECONDS || clip.length - cut < MIN_CLIP_SECONDS) return timeline

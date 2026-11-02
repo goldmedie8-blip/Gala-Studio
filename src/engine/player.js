@@ -5,6 +5,8 @@ import { playClick } from './metronome.js'
 import { createMixer } from './mixer.js'
 import { STEPS } from './pattern.js'
 import { playStep } from './playback.js'
+import { scheduleClipNotes } from './notes.js'
+import { playNote } from './piano.js'
 import { stepSeconds, swingDelay } from './sequencer.js'
 import { beatSeconds, timelineDuration } from './timeline.js'
 import { encodeWav } from './wav.js'
@@ -51,6 +53,16 @@ export function scheduleBeats(ctx, mixer, timeline, { a, b, ctxAt, from, destFor
   const bpm = timeline.bpm
   const step = stepSeconds(bpm)
   for (const track of timeline.tracks) {
+    if (track.kind === 'piano') {
+      const dest = destFor(track)
+      if (!dest) continue
+      for (const clip of track.clips) {
+        for (const e of scheduleClipNotes(clip, bpm, a, b)) {
+          playNote(ctx, dest, e.midi, ctxAt + (e.time - from), { duration: e.seconds, velocity: e.velocity, sound: clip.sound })
+        }
+      }
+      continue
+    }
     if (track.kind !== 'beat') continue
     const dest = destFor(track)
     if (!dest) continue

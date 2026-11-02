@@ -7,6 +7,7 @@ import { BASS_SOUND_IDS, SOUNDS } from '../../engine/voices.js'
 import './beats.css'
 import { PRESETS } from './presets.js'
 import { useBeatMachine } from './useBeatMachine.js'
+import MySounds from './MySounds.jsx'
 
 const STEP_INDEXES = Array.from({ length: STEPS }, (_, i) => i)
 const ROW_INDEXES = Array.from({ length: MELODY_ROWS }, (_, i) => MELODY_ROWS - 1 - i) // highest note on top
@@ -220,6 +221,7 @@ export default function Panel() {
           ))}
         </div>
       </section>
+       <MySounds />
 
       <section className="card" aria-labelledby="melody-heading">
         <div className="melody-head">

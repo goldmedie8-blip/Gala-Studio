@@ -360,4 +360,97 @@ export const WORLD_SPECS = [
       },
     },
   ],
+
+  // ---- More styles for Ugandan artists ----
+  // These are starting points built from how each style is usually felt, not strict rules. Change any step by ear,
+  // and keep what sounds right to you.
+  [
+    'lugaflow',
+    'Lugaflow',
+    {
+      bpm: 92,
+      swing: 0.2,
+      key: 9,
+      scale: 'natural-minor',
+      sound: 'keys',
+      bassSound: '808',
+      order: SONG,
+      A: {
+        drums: {
+          kick: 'x..x....x.x...x.',
+          snare: '....x.......x...',
+          hat: 'x.x.x.x.x.x.x.x.',
+          rim: '..x.....x.......',
+        },
+        bass: '0 . . 0 . . . . 3 . 2 . . . 0 .',
+        melody: '4 . . . 2 . . 3 . . . . 2 . 0 .',
+      },
+      B: {
+        drums: { clap: '....x.......x...', openHat: '......x.......x.', shaker: '.x.x.x.x.x.x.x.x' },
+        bass: '0 . . 0 . . 2 . 3 . 2 . . 0 . .',
+        melody: '4 . 5 . 4 . 2 . 3 . . 2 0 . 2 .',
+      },
+    },
+  ],
+
+  [
+    'afro-trap',
+    'Afro trap',
+    {
+      bpm: 130,
+      swing: 0.05,
+      key: 0,
+      scale: 'natural-minor',
+      sound: 'bell',
+      bassSound: '808',
+      order: SONG,
+      A: {
+        drums: {
+          kick: 'x..x....x..x....',
+          snare: '........x.......',
+          clap: '........x.......',
+          hat: 'x.x.xxx.x.x.xxx.',
+          conga: '..x..x..x..x..x.',
+        },
+        bass: '0 . . 0 . . . . 0 . . 2 . . . .',
+        melody: '4 . . . 3 . . . . . 2 . . . . .',
+      },
+      B: {
+        drums: { cowbell: '.x...x...x...x..', openHat: '......x.......x.', shaker: '.x.x.x.x.x.x.x.x' },
+        bass: '0 . . 0 . . 0 . 0 . . 2 . . 3 .',
+        melody: '4 . 5 . . . 4 . 3 . . . 2 . 3 .',
+      },
+    },
+  ],
+
+  [
+    'afro-gospel',
+    'Afro gospel',
+    {
+      bpm: 100,
+      swing: 0.1,
+      key: 7,
+      scale: 'major',
+      sound: 'keys',
+      bassSound: 'bass',
+      order: 'A A B B A A B D',
+      A: {
+        drums: {
+          kick: 'x.....x...x.....',
+          snare: '....x.......x...',
+          clap: '....x.......x...',
+          hat: 'x.x.x.x.x.x.x.x.',
+          shaker: '.x.x.x.x.x.x.x.x',
+          conga: '..x..x..x..x..x.',
+        },
+        bass: '0 . . . . . 0 . 3 . . . 4 . . .',
+        melody: '2 . . . 4 . . . 5 . . . 4 . 2 .',
+      },
+      B: {
+        drums: { openHat: '..x...x...x...x.', cowbell: '.x...x...x...x..' },
+        bass: '0 . . 0 . . 0 . 3 . . 3 . . 4 .',
+        melody: '4 . 5 . 6 . 5 . 4 . 2 . 4 . . .',
+      },
+    },
+  ],
 ]

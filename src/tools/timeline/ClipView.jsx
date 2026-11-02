@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { SECTION_LETTERS } from '../../engine/pattern.js'
+import { scheduleClipNotes } from '../../engine/notes.js'
 import { barSeconds, clipDuration, clipEnd } from '../../engine/timeline.js'
 import { draggedStart, timeToPx, waveformPath } from './geometry.js'
 
@@ -12,8 +13,9 @@ export function ClipView({ clip, track, t }) {
   const { timeline, pps, grid } = t
   const duration = clipDuration(clip, timeline.bpm)
   const selected = t.selectedClipId === clip.id
-  const isBeat = Boolean(clip.bars)
-  const missing = !isBeat && t.audio.isMissing(clip.takeId)
+  const isNotes = Boolean(clip.notes)
+  const isBeat = Boolean(clip.bars) && !isNotes
+  const missing = !isBeat && !isNotes && t.audio.isMissing(clip.takeId)
   const [drag, setDrag] = useState(null) // { mode, dx, dy }
   const startRef = useRef(null)
 
@@ -65,7 +67,7 @@ export function ClipView({ clip, track, t }) {
   }
   if (drag?.mode === 'right') width = Math.max(4, width + drag.dx)
 
-  const peaks = isBeat ? null : t.audio.getPeaks(clip.takeId)
+  const peaks = isBeat || isNotes ? null : t.audio.getPeaks(clip.takeId)
   const path = peaks ? waveformPath(peaks, clip.offset / clip.source, (clip.offset + clip.length) / clip.source, Math.max(1, width), CLIP_HEIGHT) : ''
   const bar = timeToPx(barSeconds(timeline.bpm), pps)
 
@@ -73,7 +75,7 @@ export function ClipView({ clip, track, t }) {
   return (
     <div
       className="tl-clip"
-      data-kind={isBeat ? 'beat' : 'audio'}
+      data-kind={isNotes ? 'piano' : isBeat ? 'beat' : 'audio'}
       data-selected={selected}
       data-dragging={Boolean(drag?.moved ?? drag)}
       data-missing={missing}
@@ -110,8 +112,32 @@ export function ClipView({ clip, track, t }) {
           ))}
         </span>
       )}
+      {isNotes && <NotePreview clip={clip} bpm={timeline.bpm} pps={pps} />}
       <span className="tl-clip-name">{missing ? `${clip.name} (recording missing)` : clip.name}</span>
       <span className="tl-handle tl-handle-right" aria-hidden="true" onPointerDown={begin('right')} onPointerMove={move} onPointerUp={end} />
     </div>
+  )
+}
+
+// A tiny picture of the notes in a piano clip: higher notes sit higher in the clip.
+function NotePreview({ clip, bpm, pps }) {
+  const events = scheduleClipNotes(clip, bpm, clip.start, clip.start + clipDuration(clip, bpm)).slice(0, 400)
+  if (events.length === 0) return null
+  const low = Math.min(...events.map((e) => e.midi))
+  const high = Math.max(...events.map((e) => e.midi))
+  const span = Math.max(11, high - low)
+  return (
+    <span className="tl-notes" aria-hidden="true">
+      {events.map((e, i) => (
+        <span
+          key={i}
+          style={{
+            left: timeToPx(e.time - clip.start, pps),
+            width: Math.max(2, timeToPx(e.seconds, pps) - 1),
+            bottom: `${((e.midi - low) / span) * 70}%`,
+          }}
+        />
+      ))}
+    </span>
   )
 }

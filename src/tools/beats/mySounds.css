@@ -1,0 +1,35 @@
+/* Styles for the "My sounds" section in Beats. Every class starts with ks- so nothing else is touched. */
+.ks-summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.ks-intro {
+  margin: var(--s3) 0 0;
+  font-size: 14px;
+}
+.ks-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-top: var(--s4);
+}
+.ks-row {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: var(--s3);
+}
+.ks-lane {
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+.ks-select {
+  height: 40px;
+  min-width: 0;
+  padding: 0 var(--s3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+}

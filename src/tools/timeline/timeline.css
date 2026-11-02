@@ -337,6 +337,22 @@
   font-size: 12px;
   font-weight: 700;
 }
+
+.tl-clip[data-kind='piano'] {
+  border-color: #b48cff;
+  background: color-mix(in srgb, #b48cff 18%, transparent);
+}
+.tl-notes {
+  position: absolute;
+  inset: 18px 0 4px 0;
+  pointer-events: none;
+}
+.tl-notes span {
+  position: absolute;
+  height: 3px;
+  border-radius: 2px;
+  background: #d9c6ff;
+}
 .tl-handle {
   position: absolute;
   top: 0;

@@ -1,0 +1,38 @@
+.piano-tool { display: flex; flex-direction: column; gap: var(--s4); }
+.piano-tool .muted { color: var(--text-3); margin: 0; }
+.pn-transport, .pn-instrument, .pn-part { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3) var(--s5); }
+.pn-part { flex-direction: column; align-items: stretch; }
+.pn-group { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s2) var(--s3); }
+.pn-song { flex-basis: 100%; }
+.pn-status { min-width: 110px; font-weight: 700; color: var(--accent); }
+.pn-record { background: var(--danger); color: #fff; }
+.pn-octave { display: flex; align-items: center; gap: var(--s2); font-weight: 600; }
+.pn-saved { margin: 0; color: var(--ok); }
+.piano-tool .play-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); min-width: 112px; height: 46px; padding: 0 var(--s5); border: 0; border-radius: var(--radius-pill); background: var(--accent); color: var(--accent-ink); font-size: 15px; font-weight: 700; }
+.piano-tool .play-btn-stop { background: var(--text); color: var(--bg); }
+.piano-tool .tempo-value { display: flex; align-items: baseline; gap: var(--s1); }
+.piano-tool .tempo-value input { width: 64px; height: 40px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); color: var(--text); font-size: 18px; font-weight: 700; text-align: center; }
+.piano-tool .tempo-value span { color: var(--text-3); font-size: 11px; font-weight: 700; }
+.piano-tool .toggle-btn { display: inline-flex; align-items: center; gap: var(--s1); height: 40px; padding: 0 var(--s4); border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--surface-2); color: var(--text-2); font-weight: 600; }
+.piano-tool .toggle-btn[aria-pressed='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+/* keyboard */
+.pn-keys { display: flex; height: 190px; overflow-x: auto; user-select: none; touch-action: manipulation; border-radius: var(--radius); background: #000; padding: 2px; }
+.pn-white-wrap { position: relative; flex: 1 0 calc(100% / var(--whites)); min-width: 30px; }
+.pn-white { width: 100%; height: 100%; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; border: 1px solid #888; border-radius: 0 0 6px 6px; background: #f4f4f2; color: #555; font-size: 11px; touch-action: none; }
+.pn-white[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); }
+.pn-white[data-in-key='false'] { background: #cfcfcc; }
+.pn-white[data-in-key='true'] { box-shadow: inset 0 -6px 0 var(--accent-soft); }
+.pn-black { position: absolute; z-index: 2; top: 0; left: 66%; width: 62%; height: 62%; border: 1px solid #000; border-radius: 0 0 5px 5px; background: #1b1b1d; touch-action: none; }
+.pn-black[aria-pressed='true'] { background: var(--accent); }
+.pn-black[data-in-key='false'] { background: #3a3a3d; opacity: 0.55; }
+.pn-key-label { pointer-events: none; }
+.pn-help { font-size: 13px; }
+
+/* note roll */
+.pn-roll { position: relative; height: 140px; overflow: hidden; border-radius: var(--radius); background-color: var(--surface-2); background-image: repeating-linear-gradient(to right, var(--border) 0, var(--border) 1px, transparent 1px, transparent calc(100% / var(--beats))); }
+.pn-roll::after { content: ''; position: absolute; inset: 0; pointer-events: none; background-image: repeating-linear-gradient(to right, var(--text-3) 0, var(--text-3) 1px, transparent 1px, transparent calc(100% / var(--bars))); opacity: 0.6; }
+.pn-roll-hint { position: absolute; left: var(--s3); top: 50%; transform: translateY(-50%); }
+.pn-note { position: absolute; min-height: 6px; padding: 0; border: 0; border-radius: 3px; background: #b48cff; }
+.pn-note:hover { background: var(--danger); }
+.pn-cursor { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--danger); z-index: 2; }
