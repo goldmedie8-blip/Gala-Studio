@@ -69,6 +69,7 @@ export function usePiano() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [canUndo, setCanUndo] = useState(false)
+  const [selected, setSelected] = useState(null) // index of the note being edited
 
   const ref = useRef({})
   const live = useRef(new Map()) // midi -> { voices, key }
@@ -279,6 +280,7 @@ export function usePiano() {
     if (ref.current.notes.length === 0) return
     pushHistory()
     setNotes([])
+    setSelected(null)
     setSaved(null)
   }, [pushHistory])
 
@@ -286,18 +288,101 @@ export function usePiano() {
     const previous = historyRef.current.pop()
     if (!previous) return
     setNotes(previous)
+    setSelected(null)
     setCanUndo(historyRef.current.length > 0)
     setSaved(null)
   }, [])
 
-  const removeNote = useCallback(
-    (index) => {
+  const gridBeats = () => getGrid(state.current.quantizeId) || 0.25
+
+  const preview = useCallback(
+    (midi) => {
+      const { ctx, liveBus } = audio()
+      playNote(ctx, liveBus, midi, ctx.currentTime, { duration: 0.35, velocity: 0.7, sound: state.current.sound })
+    },
+    [audio],
+  )
+
+  // Puts a note where you pressed the roll, snapped to the timing grid.
+  const addNote = useCallback(
+    (midi, beat) => {
+      const grid = gridBeats()
+      const total = state.current.bars * BEATS_PER_BAR
+      const start = Math.min(total - grid, Math.max(0, Math.round(beat / grid) * grid))
+      const note = { midi: clampNote(midi), start, length: Math.max(grid, 0.5), velocity: 0.8 }
       pushHistory()
-      setNotes((list) => list.filter((_, i) => i !== index))
+      const next = normalizeNotes([...ref.current.notes, note], state.current.bars)
+      setNotes(next)
+      setSelected(next.findIndex((n) => n.midi === note.midi && n.start === note.start))
+      setSaved(null)
+      preview(note.midi)
+    },
+    [preview, pushHistory],
+  )
+
+  const selectNote = useCallback(
+    (index) => {
+      setSelected((current) => (current === index ? null : index))
+      const note = ref.current.notes[index]
+      if (note) preview(note.midi)
+    },
+    [preview],
+  )
+
+  // Changes the selected note: { pitch: semitones, time: beats, length: beats }.
+  const changeSelected = useCallback(
+    ({ pitch = 0, time = 0, length = 0 }) => {
+      const note = ref.current.notes[selected]
+      if (!note) return
+      const total = state.current.bars * BEATS_PER_BAR
+      const updated = {
+        ...note,
+        midi: clampNote(note.midi + pitch),
+        start: Math.min(total - 0.0625, Math.max(0, note.start + time)),
+        length: Math.max(0.0625, note.length + length),
+      }
+      pushHistory()
+      const next = normalizeNotes(ref.current.notes.map((n, i) => (i === selected ? updated : n)), state.current.bars)
+      setNotes(next)
+      setSelected(next.findIndex((n) => n.midi === updated.midi && n.start === updated.start))
+      setSaved(null)
+      if (pitch) preview(updated.midi)
+    },
+    [preview, pushHistory, selected],
+  )
+
+  const deleteSelected = useCallback(() => {
+    if (selected === null) return
+    pushHistory()
+    setNotes((list) => list.filter((_, i) => i !== selected))
+    setSelected(null)
+    setSaved(null)
+  }, [pushHistory, selected])
+
+  // Moves every note up or down. 12 is one octave.
+  const transpose = useCallback(
+    (semitones) => {
+      if (ref.current.notes.length === 0) return
+      pushHistory()
+      setNotes((list) => normalizeNotes(list.map((n) => ({ ...n, midi: clampNote(n.midi + semitones) })), state.current.bars))
+      setSelected(null)
       setSaved(null)
     },
     [pushHistory],
   )
+
+  // Makes the part twice as long, repeating what you have, so a 2-bar idea becomes 4 bars to build on.
+  const doublePart = useCallback(() => {
+    const bars = state.current.bars
+    if (bars * 2 > MAX_BARS) return
+    endSession(false)
+    pushHistory()
+    const shift = bars * BEATS_PER_BAR
+    setBarsState(bars * 2)
+    setNotes((list) => normalizeNotes([...list, ...list.map((n) => ({ ...n, start: n.start + shift }))], bars * 2))
+    setSelected(null)
+    setSaved(null)
+  }, [endSession, pushHistory])
 
   const tidyUp = useCallback(() => {
     const grid = getGrid(state.current.quantizeId)
@@ -351,7 +436,8 @@ export function usePiano() {
     sound, setSound, octave, shiftOctave, chord, setChord, keyRoot, setKeyRoot, scale, setScale, showKey, setShowKey, snap, setSnap,
     bpm, setBpm, bars, setBars, quantizeId, setQuantizeId, withBeat, setWithBeat, metronome, setMetronome, countIn, setCountIn,
     notes, partName, setPartName, mode, position, held, song, saved, saving, error, canUndo,
-    noteDown, noteUp, releaseAll, record, play, stop, clear, undo, removeNote, tidyUp, saveToSong, beat,
+    selected, addNote, selectNote, changeSelected, deleteSelected, transpose, doublePart,
+    noteDown, noteUp, releaseAll, record, play, stop, clear, undo, tidyUp, saveToSong, beat,
     base: 12 * (octave + 1),
   }
 }

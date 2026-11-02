@@ -65,6 +65,10 @@ export default function Panel() {
               ))}
             </select>
           </div>
+          <label className="field dr-swing">
+            <span>Swing</span>
+            <input type="range" min="0" max="1" step="0.05" value={p.swing} aria-label="Swing" onChange={(e) => p.setSwing(e.target.value)} />
+          </label>
           <button type="button" className="toggle-btn" aria-pressed={p.click} onClick={() => p.setClick(!p.click)}>
             Click
           </button>
@@ -109,7 +113,12 @@ export default function Panel() {
           <div className="dr-grid" style={{ '--steps': total }}>
             {DRUM_LANES.map((lane) => (
               <div key={lane.id} className="dr-row">
-                <span className="dr-lane">{lane.name}</span>
+                <span className="dr-lane">
+                  {lane.name}
+                  <button type="button" className="dr-lane-clear" aria-label={`Clear ${lane.name}`} onClick={() => p.clearLane(lane.id)}>
+                    x
+                  </button>
+                </span>
                 <div className="dr-cells">
                   {p.hits[lane.id].map((on, step) => (
                     <button
@@ -134,6 +143,11 @@ export default function Panel() {
             <label htmlFor="dr-name">Part name</label>
             <input id="dr-name" className="input" type="text" maxLength={40} value={p.partName} onChange={(e) => p.setPartName(e.target.value)} />
           </div>
+          {p.bars > 1 && (
+            <button type="button" className="btn btn-secondary" onClick={p.repeatFirstBar}>
+              Repeat bar 1
+            </button>
+          )}
           <button type="button" className="btn btn-secondary" onClick={p.undo} disabled={!p.canUndo}>
             <Icon name="undo" size={18} />
             Undo

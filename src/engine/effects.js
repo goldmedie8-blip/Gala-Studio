@@ -21,7 +21,13 @@ export function compressorSettings(amount) {
   return { threshold: -4 - a * 28, ratio: 1 + a * 7, knee: 10, attack: 0.012, release: 0.18, makeup: 10 ** ((a * 5) / 20) }
 }
 
-export const SOFT_S_HZ = 7000
+// A de-esser squeezes only the bright top end of a voice (where "s" and "t" sounds hurt), and only when it
+// gets loud, so the rest of the voice is untouched.
+export const DEESS_SPLIT_HZ = 6000
+export function deEsserSettings(amount) {
+  const a = clamp(amount, 0, 1, 0)
+  return { threshold: -8 - a * 30, ratio: 1 + a * 11, knee: 6, attack: 0.002, release: 0.07 }
+}
 export const DOUBLE_DELAYS = [0.017, 0.027] // seconds: left and right copies
 
 // One-tap starting points for a voice. Volume, pan and EQ are left alone.

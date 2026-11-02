@@ -162,7 +162,44 @@ export default function Panel() {
       <p className="muted pn-help">On a laptop you can play with the letter keys A to L (black keys W, E, T, Y, U, O, P). Z and X change the octave.</p>
 
       <section className="card pn-part" aria-label="Your part">
-        <NoteRoll notes={p.notes} bars={p.bars} position={p.position} mode={p.mode} onRemove={p.removeNote} />
+        <NoteRoll
+          notes={p.notes}
+          bars={p.bars}
+          position={p.position}
+          mode={p.mode}
+          selected={p.selected}
+          onSelect={p.selectNote}
+          onAdd={p.addNote}
+          low={Math.max(21, Math.min(p.base, ...p.notes.map((n) => n.midi)))}
+          high={Math.min(108, Math.max(p.base + 24, ...p.notes.map((n) => n.midi)))}
+        />
+        <div className="pn-edit" role="group" aria-label="Edit notes">
+          {p.selected !== null && p.notes[p.selected] ? (
+            <>
+              <span className="pn-edit-label">Selected note</span>
+              <button type="button" className="btn btn-secondary" onClick={() => p.changeSelected({ pitch: 1 })}>Higher</button>
+              <button type="button" className="btn btn-secondary" onClick={() => p.changeSelected({ pitch: -1 })}>Lower</button>
+              <button type="button" className="btn btn-secondary" onClick={() => p.changeSelected({ time: -0.25 })}>Earlier</button>
+              <button type="button" className="btn btn-secondary" onClick={() => p.changeSelected({ time: 0.25 })}>Later</button>
+              <button type="button" className="btn btn-secondary" onClick={() => p.changeSelected({ length: -0.25 })}>Shorter</button>
+              <button type="button" className="btn btn-secondary" onClick={() => p.changeSelected({ length: 0.25 })}>Longer</button>
+              <button type="button" className="btn btn-secondary" onClick={p.deleteSelected}>
+                <Icon name="trash" size={18} />
+                Delete note
+              </button>
+            </>
+          ) : (
+            <span className="muted">Press a note to edit it, or press an empty spot to add one.</span>
+          )}
+        </div>
+        <div className="pn-edit" role="group" aria-label="Whole part">
+          <span className="pn-edit-label">Whole part</span>
+          <button type="button" className="btn btn-secondary" onClick={() => p.transpose(1)} disabled={p.notes.length === 0}>Up a step</button>
+          <button type="button" className="btn btn-secondary" onClick={() => p.transpose(-1)} disabled={p.notes.length === 0}>Down a step</button>
+          <button type="button" className="btn btn-secondary" onClick={() => p.transpose(12)} disabled={p.notes.length === 0}>Up an octave</button>
+          <button type="button" className="btn btn-secondary" onClick={() => p.transpose(-12)} disabled={p.notes.length === 0}>Down an octave</button>
+          <button type="button" className="btn btn-secondary" onClick={p.doublePart} disabled={p.bars >= 16 || p.notes.length === 0}>Repeat to make it twice as long</button>
+        </div>
         <div className="pn-group">
           <div className="field">
             <label htmlFor="pn-name">Part name</label>

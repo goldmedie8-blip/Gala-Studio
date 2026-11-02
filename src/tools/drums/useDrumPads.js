@@ -3,6 +3,7 @@ import { getAudioContext, unlockAudio } from '../../engine/audioContext.js'
 import { emptyHits, hasHits, hitsToPattern, normalizeHits, setHit, stepFor, toggleHit, MAX_DRUM_BARS } from '../../engine/drumPart.js'
 import { playClick } from '../../engine/metronome.js'
 import { DRUM_LANES, MAX_BPM, MIN_BPM, STEPS } from '../../engine/pattern.js'
+import { swingDelay } from '../../engine/sequencer.js'
 import { createMaster, playDrum } from '../../engine/playback.js'
 import { loadBeat } from '../../storage/beatStore.js'
 import { addDrumPartToSong, currentSong } from '../../storage/songParts.js'
@@ -29,6 +30,7 @@ export function useDrumPads() {
   const [bars, setBarsState] = useState(draft.bars ?? 1)
   const [bpm, setBpmState] = useState(draft.bpm ?? (loadBeat() ?? PRESETS[0].pattern).bpm)
   const [hits, setHits] = useState(() => normalizeHits(draft.hits, draft.bars ?? 1))
+  const [swing, setSwingState] = useState(draft.swing ?? 0)
   const [click, setClick] = useState(true)
   const [countIn, setCountIn] = useState(true)
   const [partName, setPartName] = useState(draft.partName ?? 'Drum idea')
@@ -43,8 +45,8 @@ export function useDrumPads() {
 
   const hitsRef = useRef(hits)
   hitsRef.current = hits
-  const live = useRef({ bars, bpm, click, countIn })
-  live.current = { bars, bpm, click, countIn }
+  const live = useRef({ bars, bpm, click, countIn, swing })
+  live.current = { bars, bpm, click, countIn, swing }
   const sessionRef = useRef(null)
   const historyRef = useRef([])
   const masterRef = useRef(null)
@@ -65,11 +67,11 @@ export function useDrumPads() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ bars, bpm, hits, partName }))
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ bars, bpm, hits, partName, swing }))
     } catch {
       // not remembered
     }
-  }, [bars, bpm, hits, partName])
+  }, [bars, bpm, hits, partName, swing])
 
   const audio = useCallback(() => {
     const ctx = getAudioContext()
@@ -150,10 +152,11 @@ export function useDrumPads() {
           const limit = ((now + 0.12 - t0) / beatSec) * 4 // in steps
           for (let n = Math.ceil(session.cursor); n < limit; n++) {
             const time = t0 + (n * beatSec) / 4
+            const late = n >= 0 ? swingDelay(n, live.current.bpm, live.current.swing) : 0
             if (n % 4 === 0 && (n < 0 || live.current.click)) playClick(ctx, gate, time, mod(n, 16) === 0)
             if (n < 0) continue
             for (const lane of DRUM_LANES) {
-              if (hitsRef.current[lane.id][n % total] && !session.skip.has(`${lane.id}:${n}`)) playDrum(ctx, gate, lane.id, time)
+              if (hitsRef.current[lane.id][n % total] && !session.skip.has(`${lane.id}:${n}`)) playDrum(ctx, gate, lane.id, time + late)
             }
           }
           if (limit > session.cursor) session.cursor = limit
@@ -194,6 +197,27 @@ export function useDrumPads() {
     setSaved(null)
   }, [pushHistory])
 
+  const clearLane = useCallback(
+    (laneId) => {
+      if (!hitsRef.current[laneId]?.some(Boolean)) return
+      pushHistory()
+      setHits((h) => ({ ...h, [laneId]: h[laneId].map(() => false) }))
+      setSaved(null)
+    },
+    [pushHistory],
+  )
+
+  // Copies the first bar into every other bar, so a bar you like becomes the whole loop.
+  const repeatFirstBar = useCallback(() => {
+    const n = live.current.bars
+    if (n < 2) return
+    pushHistory()
+    setHits((h) => Object.fromEntries(Object.entries(h).map(([id, row]) => [id, row.map((_, i) => row[i % STEPS])])))
+    setSaved(null)
+  }, [pushHistory])
+
+  const setSwing = useCallback((v) => setSwingState(Math.min(1, Math.max(0, Number(v) || 0))), [])
+
   const undo = useCallback(() => {
     const previous = historyRef.current.pop()
     if (!previous) return
@@ -222,7 +246,7 @@ export function useDrumPads() {
     setSaving(true)
     setError('')
     try {
-      const pattern = hitsToPattern(hitsRef.current, bars, { bpm })
+      const pattern = hitsToPattern(hitsRef.current, bars, { bpm, swing })
       const result = await addDrumPartToSong({ name: partName, bars, pattern })
       setSong(result.project)
       setSaved({ songName: result.project.name })
@@ -231,9 +255,9 @@ export function useDrumPads() {
     } finally {
       setSaving(false)
     }
-  }, [bars, bpm, endSession, partName])
+  }, [bars, bpm, swing, endSession, partName])
 
   useEffect(() => endSession, [endSession])
 
-  return { bars, setBars, bpm, setBpm, hits, click, setClick, countIn, setCountIn, partName, setPartName, mode, position, flash, song, saved, saving, error, canUndo, hit, record, play, stop, toggleStep, clear, undo, saveToSong }
+  return { swing, setSwing, clearLane, repeatFirstBar, bars, setBars, bpm, setBpm, hits, click, setClick, countIn, setCountIn, partName, setPartName, mode, position, flash, song, saved, saving, error, canUndo, hit, record, play, stop, toggleStep, clear, undo, saveToSong }
 }

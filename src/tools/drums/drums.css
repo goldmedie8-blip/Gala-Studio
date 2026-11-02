@@ -35,3 +35,8 @@
 .drums-tool .field { display: flex; flex-direction: column; gap: 4px; }
 .drums-tool .field label { color: var(--text-3); font-size: 12px; font-weight: 600; }
 .drums-tool .field select, .drums-tool .field .input { height: 40px; padding: 0 var(--s3); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); color: var(--text); }
+
+.dr-lane { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.dr-lane-clear { width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--text-3); font-size: 12px; line-height: 1; }
+.dr-lane-clear:hover { background: var(--surface-2); color: var(--danger); }
+.dr-swing input { width: 110px; }

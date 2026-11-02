@@ -79,4 +79,26 @@ describe('Piano', () => {
     expect(snapToKey(61, 0, 'major')).toBe(62) // C# in C major goes up to D
     expect(snapToKey(60, 0, 'major')).toBe(60)
   })
+
+  test('pressing the roll adds a note, which can be edited, moved and deleted', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    const roll = await screen.findByRole('group', { name: 'Recorded notes' })
+    // jsdom has no layout, so give the roll a size: 2 bars across 800px, rows of 14px
+    roll.getBoundingClientRect = () => ({ left: 0, top: 0, width: 800, height: 25 * 14, right: 800, bottom: 350 })
+    fireEvent.click(roll, { clientX: 100, clientY: 5 })
+    const note = await screen.findByRole('button', { name: /^Note .* at beat 2\.00$/ })
+    expect(note).toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('button', { name: 'Higher' }))
+    await user.click(screen.getByRole('button', { name: 'Later' }))
+    expect(screen.getByRole('button', { name: /at beat 2\.25$/ })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Up an octave' }))
+    await user.click(screen.getByRole('button', { name: /repeat to make it twice as long/i }))
+    expect(screen.getAllByRole('button', { name: /^Note / })).toHaveLength(2)
+    await user.click(screen.getByRole('button', { name: /^Note .* at beat 2\.25$/ }))
+    await user.click(screen.getByRole('button', { name: /delete note/i }))
+    expect(screen.getAllByRole('button', { name: /^Note / })).toHaveLength(1)
+    await user.click(screen.getByRole('button', { name: /^undo$/i }))
+    expect(screen.getAllByRole('button', { name: /^Note / })).toHaveLength(2)
+  })
 })

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { ceilingCurve, compressorSettings, delaySeconds, masteringSettings } from './effects.js'
+import { ceilingCurve, compressorSettings, deEsserSettings, delaySeconds, masteringSettings } from './effects.js'
 import { measureLoudness } from './loudness.js'
 
 const sine = (amp, seconds, rate = 48000, hz = 997) => Float32Array.from({ length: seconds * rate }, (_, i) => amp * Math.sin((2 * Math.PI * hz * i) / rate))
@@ -56,5 +56,13 @@ describe('effects settings', () => {
   test('boost only applies to a mastering style, and is limited', () => {
     expect(masteringSettings({ preset: 'off', boost: 9 }).makeupGain).toBeCloseTo(masteringSettings({ preset: 'off' }).makeupGain)
     expect(masteringSettings({ preset: 'club', boost: 99 }).makeupGain).toBeLessThan(10 ** (23 / 20))
+  })
+})
+
+describe('de-esser', () => {
+  test('more amount squeezes the highs harder and sooner, and none leaves them alone', () => {
+    expect(deEsserSettings(0).ratio).toBe(1)
+    expect(deEsserSettings(1).ratio).toBeGreaterThan(deEsserSettings(0.3).ratio)
+    expect(deEsserSettings(1).threshold).toBeLessThan(deEsserSettings(0.3).threshold)
   })
 })

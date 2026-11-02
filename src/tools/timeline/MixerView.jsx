@@ -108,7 +108,7 @@ function Strip({ track, t, level }) {
         </label>
         {[
           ['comp', 'Compressor', 'Compressor'],
-          ['softS', 'Soften S', 'Soften S sounds'],
+          ['softS', 'De-esser', 'De-esser'],
           ['double', 'Double', 'Doubler'],
           ['delay', 'Echo', 'Echo'],
         ].map(([key, label, aria]) => (

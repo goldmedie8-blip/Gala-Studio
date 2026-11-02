@@ -2,7 +2,7 @@
 // audio context, so the same mixer plays live and renders the exported song.
 //
 // Signal path of a track:
-//   clips -> soften S -> compressor -> low EQ -> mid EQ -> high EQ -> pan -> volume -> master
+//   clips -> de-esser -> compressor -> low EQ -> mid EQ -> high EQ -> pan -> volume -> master
 //                                                                              |-> reverb send -> reverb -> master
 //                                                                              |-> echo send -> echo -> master
 //                                                                              \-> doubler (two short delays, left and right) -> master
@@ -12,7 +12,7 @@
 // With mastering Off it behaves like the gentle compressor Gala always had.
 import { levelFromTimeDomain } from './level.js'
 import { EQ_RANGE, trackGain } from './timeline.js'
-import { DOUBLE_DELAYS, SOFT_S_HZ, ceilingCurve, compressorSettings, delaySeconds, masteringSettings } from './effects.js'
+import { DEESS_SPLIT_HZ, DOUBLE_DELAYS, ceilingCurve, compressorSettings, deEsserSettings, delaySeconds, masteringSettings } from './effects.js'
 
 export const EQ_BANDS = [
   { id: 'low', name: 'Low', type: 'lowshelf', frequency: 200 },
@@ -39,10 +39,26 @@ const DOUBLE_LEVEL = 0.6
 
 function createStrip(ctx, track, master, reverb) {
   const input = ctx.createGain()
-  const softS = ctx.createBiquadFilter()
-  softS.type = 'peaking'
-  softS.frequency.setValueAtTime(SOFT_S_HZ, 0)
-  softS.Q.setValueAtTime(2, 0)
+  // De-esser: split the voice into low and high parts, squeeze only the high part, and put them back.
+  // The high part is turned upside down before adding, which makes the two parts add up flat.
+  const sLow = ctx.createBiquadFilter()
+  sLow.type = 'lowpass'
+  sLow.frequency.setValueAtTime(DEESS_SPLIT_HZ, 0)
+  sLow.Q.setValueAtTime(0.7071, 0)
+  const sHigh = ctx.createBiquadFilter()
+  sHigh.type = 'highpass'
+  sHigh.frequency.setValueAtTime(DEESS_SPLIT_HZ, 0)
+  sHigh.Q.setValueAtTime(0.7071, 0)
+  const sComp = ctx.createDynamicsCompressor()
+  const sFlip = ctx.createGain()
+  sFlip.gain.value = -1
+  const sSum = ctx.createGain()
+  input.connect(sLow)
+  input.connect(sHigh)
+  sLow.connect(sSum)
+  sHigh.connect(sComp)
+  sComp.connect(sFlip)
+  sFlip.connect(sSum)
   const comp = ctx.createDynamicsCompressor()
   const makeup = ctx.createGain()
   const bands = EQ_BANDS.map((band) => {
@@ -58,8 +74,8 @@ function createStrip(ctx, track, master, reverb) {
   const meter = ctx.createAnalyser()
   meter.fftSize = 1024
 
-  let last = input
-  for (const node of [softS, comp, makeup, ...bands.map((b) => b.filter), ...(panner ? [panner] : [])]) {
+  let last = sSum
+  for (const node of [comp, makeup, ...bands.map((b) => b.filter), ...(panner ? [panner] : [])]) {
     last.connect(node)
     last = node
   }
@@ -102,7 +118,7 @@ function createStrip(ctx, track, master, reverb) {
   })
   fader.connect(doubleSend)
 
-  return { id: track.id, input, bands, panner, fader, send, meter, softS, comp, makeup, echoSend, echo, doubleSend, doubles, samples: new Float32Array(meter.fftSize) }
+  return { id: track.id, input, bands, panner, fader, send, meter, softS: sComp, comp, makeup, echoSend, echo, doubleSend, doubles, samples: new Float32Array(meter.fftSize) }
 }
 
 export function createMixer(ctx) {
@@ -173,7 +189,12 @@ export function createMixer(ctx) {
       if (strip.panner) strip.panner.pan.value = track.pan
       for (const { id, filter } of strip.bands) filter.gain.value = Math.max(-EQ_RANGE, Math.min(EQ_RANGE, track.eq[id]))
       strip.send.gain.value = track.reverb
-      strip.softS.gain.value = -10 * track.softS
+      const d = deEsserSettings(track.softS)
+      strip.softS.threshold.value = d.threshold
+      strip.softS.ratio.value = d.ratio
+      strip.softS.knee.value = d.knee
+      strip.softS.attack.value = d.attack
+      strip.softS.release.value = d.release
       const c = compressorSettings(track.comp)
       strip.comp.threshold.value = c.threshold
       strip.comp.ratio.value = c.ratio

@@ -146,7 +146,7 @@ describe('Timeline', () => {
     renderPanel()
     await screen.findByLabelText('Name of beat track Beat 1')
     await user.click(screen.getByRole('button', { name: 'Mixer' }))
-    for (const name of ['Compressor, Audio 1', 'Soften S sounds, Audio 1', 'Doubler, Audio 1', 'Echo, Audio 1', 'Echo timing, Audio 1']) {
+    for (const name of ['Compressor, Audio 1', 'De-esser, Audio 1', 'Doubler, Audio 1', 'Echo, Audio 1', 'Echo timing, Audio 1']) {
       expect(screen.getByLabelText(name)).toBeInTheDocument()
     }
     await user.selectOptions(screen.getByLabelText('Effects preset, Audio 1'), 'echo')
