@@ -36,3 +36,7 @@
 .pn-note { position: absolute; min-height: 6px; padding: 0; border: 0; border-radius: 3px; background: #b48cff; }
 .pn-note:hover { background: var(--danger); }
 .pn-cursor { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--danger); z-index: 2; }
+
+.piano-tool .field { display: flex; flex-direction: column; gap: 4px; }
+.piano-tool .field label { color: var(--text-3); font-size: 12px; font-weight: 600; }
+.piano-tool .field select, .piano-tool .field .input { height: 40px; padding: 0 var(--s3); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); color: var(--text); }

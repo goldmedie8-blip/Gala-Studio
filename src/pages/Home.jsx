@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { InstallCard } from '../app/InstallCard.jsx'
 import { STAGES, stageStatus } from '../app/stages.js'
 import { Icon } from '../design/Icon.jsx'
 import { getTools } from '../tools/index.js'
@@ -38,6 +39,8 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <InstallCard />
 
       <section aria-labelledby="tools-heading">
         <h2 id="tools-heading" className="section-title">

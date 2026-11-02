@@ -19,6 +19,7 @@ import {
   setLoop,
   setMasterVolume,
   setTempo,
+  setMastering,
   setTrack,
   snapTime,
   splitClip,
@@ -240,5 +241,25 @@ describe('starting from a Studio song', () => {
     const t = timelineFromSong({ ...blankSong(pattern), takeId: 'v', offset: -1 }, { voiceSeconds: 8 })
     expect(t.tracks.find((x) => x.kind === 'audio').clips[0].start).toBe(1)
     expect(t.tracks.find((x) => x.kind === 'beat').clips[0].start).toBe(0)
+  })
+})
+
+describe('effects and mastering settings', () => {
+  test('track effects are kept inside their range and bad saves are repaired', () => {
+    let t = addTrack(emptyTimeline(100), { kind: 'audio', id: 'v' })
+    t = setTrack(t, 'v', { comp: 5, softS: -1, double: 0.4, delay: 0.3, delayTime: 'eighth' })
+    expect(t.tracks[0]).toMatchObject({ comp: 1, softS: 0, double: 0.4, delay: 0.3, delayTime: 'eighth' })
+    t = setTrack(t, 'v', { delayTime: 'nonsense' })
+    expect(t.tracks[0].delayTime).toBe('eighth')
+    const old = normalizeTimeline({ tracks: [{ id: 'x', kind: 'audio', clips: [] }] }) // saved before effects existed
+    expect(old.tracks[0]).toMatchObject({ comp: 0, delay: 0, delayTime: 'dotted' })
+    expect(old.master).toEqual({ preset: 'off', boost: 0 })
+  })
+
+  test('mastering style and boost are validated', () => {
+    let t = setMastering(emptyTimeline(100), { preset: 'club', boost: 99 })
+    expect(t.master).toEqual({ preset: 'club', boost: 14 })
+    t = setMastering(t, { preset: 'nope' })
+    expect(t.master.preset).toBe('club')
   })
 })

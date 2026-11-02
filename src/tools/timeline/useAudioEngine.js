@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getAudioContext, unlockAudio } from '../../engine/audioContext.js'
 import { decodeAudioBlob, peaksFromBuffer } from '../../engine/mix.js'
 import { createMixer } from '../../engine/mixer.js'
-import { TimelinePlayer, renderTimeline } from '../../engine/player.js'
+import { TimelinePlayer, measureTimeline, renderTimeline } from '../../engine/player.js'
 import { getTake } from '../../storage/takes.js'
 
 const PEAKS_PER_SECOND = 20
@@ -90,6 +90,14 @@ export function useAudioEngine({ getTimeline, onEnd }) {
     [loadAll],
   )
 
+  const measure = useCallback(
+    async (timeline) => {
+      await loadAll(timeline)
+      return measureTimeline(timeline, (id) => buffersRef.current.get(id))
+    },
+    [loadAll],
+  )
+
   useEffect(
     () => () => {
       const engine = engineRef.current
@@ -110,11 +118,12 @@ export function useAudioEngine({ getTimeline, onEnd }) {
       loadAll,
       loadBuffer,
       exportMix,
+      measure,
       getPeaks: (takeId) => peaksRef.current.get(takeId),
       getDuration: (takeId) => buffersRef.current.get(takeId)?.duration,
       isMissing: (takeId) => missingRef.current.has(takeId),
     }),
-    [ensureEngine, apply, loadAll, loadBuffer, exportMix],
+    [ensureEngine, apply, loadAll, loadBuffer, exportMix, measure],
   )
   return { api, version }
 }

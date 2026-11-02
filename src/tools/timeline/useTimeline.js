@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { MASTER_PRESETS, MAX_BOOST } from '../../engine/effects.js'
 import {
   addAudioClip,
   addBeatClip,
@@ -15,6 +16,7 @@ import {
   setClipGain,
   setLoop,
   setMasterVolume,
+  setMastering,
   setMetronome,
   setTempo,
   setTrack,
@@ -68,6 +70,7 @@ export function useTimeline() {
   const [grid, setGrid] = useState('beat')
   const [view, setView] = useState('timeline')
   const [exporting, setExporting] = useState(false)
+  const [loudness, setLoudness] = useState(null) // { lufs, peakDb } or { busy: true }
   const [error, setError] = useState('')
   const [, setHistoryTick] = useState(0)
 
@@ -178,6 +181,7 @@ export function useTimeline() {
       timelineRef.current = next
       dirtyRef.current = true
       setTimelineState(next)
+      setLoudness(null)
       setSaveState('saving')
       audio.apply(next, { restart })
       return true
@@ -422,6 +426,52 @@ export function useTimeline() {
     }
   }, [audio, song])
 
+  // ---- mastering ---------------------------------------------------------------------------------
+  const setMasteringValue = useCallback((patch) => commit((t) => setMastering(t, patch), { history: true }), [commit])
+
+  const checkLoudness = useCallback(async () => {
+    setError('')
+    setLoudness({ busy: true })
+    try {
+      const result = await audio.measure(timelineRef.current)
+      setLoudness(result)
+      return result
+    } catch (e) {
+      setLoudness(null)
+      setError(e.message || 'Could not measure the song.')
+      return null
+    }
+  }, [audio])
+
+  // Raises or lowers the loudness boost until the song reaches the target of the chosen mastering style.
+  const matchLoudness = useCallback(async () => {
+    const target = MASTER_PRESETS[timelineRef.current.master.preset]?.target
+    if (target == null) return
+    setError('')
+    setLoudness({ busy: true })
+    try {
+      let boost = timelineRef.current.master.boost
+      let result = null
+      for (let pass = 0; pass < 4; pass++) {
+        const trial = setMastering(timelineRef.current, { boost })
+        result = await audio.measure(trial)
+        if (!Number.isFinite(result.lufs)) break
+        const gap = target - result.lufs
+        if (Math.abs(gap) < 0.4) break
+        const next = Math.min(MAX_BOOST, Math.max(0, boost + gap))
+        if (next === boost) break
+        boost = next
+      }
+      commit((t) => setMastering(t, { boost: Math.round(boost * 10) / 10 }), { history: true })
+      setLoudness(result)
+    } catch (e) {
+      setLoudness(null)
+      setError(e.message || 'Could not measure the song.')
+    }
+  }, [audio, commit])
+
+  const getReduction = useCallback(() => audio.engineRef.current?.mixer.reduction?.() ?? 0, [audio.engineRef])
+
   const getLevels = useCallback(() => audio.engineRef.current?.mixer.levels() ?? null, [audio.engineRef])
 
   // Make sure a recording used by a freshly opened or restored timeline is loaded, so its waveform shows.
@@ -458,6 +508,11 @@ export function useTimeline() {
     setView,
     getPosition,
     getLevels,
+    getReduction,
+    loudness,
+    setMastering: setMasteringValue,
+    checkLoudness,
+    matchLoudness,
     play,
     pause,
     stop,

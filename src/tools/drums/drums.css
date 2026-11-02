@@ -31,3 +31,7 @@
 .dr-cell[data-beat='true'] { background: var(--surface-3, var(--surface-2)); box-shadow: inset 2px 0 0 var(--border); }
 .dr-cell[data-on='true'] { background: var(--accent); }
 .dr-cell[data-now='true'] { outline: 2px solid var(--text); outline-offset: -2px; }
+
+.drums-tool .field { display: flex; flex-direction: column; gap: 4px; }
+.drums-tool .field label { color: var(--text-3); font-size: 12px; font-weight: 600; }
+.drums-tool .field select, .drums-tool .field .input { height: 40px; padding: 0 var(--s3); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); color: var(--text); }

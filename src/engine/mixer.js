@@ -1,12 +1,18 @@
 // The mixer: one channel strip per track, a reverb everyone can send to, and a master. It is built on any
 // audio context, so the same mixer plays live and renders the exported song.
 //
-// Signal path of a track:  clips -> low EQ -> mid EQ -> high EQ -> pan -> volume -> master
-//                                                                              \-> reverb send -> reverb -> master
+// Signal path of a track:
+//   clips -> soften S -> compressor -> low EQ -> mid EQ -> high EQ -> pan -> volume -> master
+//                                                                              |-> reverb send -> reverb -> master
+//                                                                              |-> echo send -> echo -> master
+//                                                                              \-> doubler (two short delays, left and right) -> master
 // The level meter listens after the volume, so it shows what you hear.
+//
+// The master path is:  all tracks -> glue compressor -> make-up gain -> limiter -> ceiling -> speakers.
+// With mastering Off it behaves like the gentle compressor Gala always had.
 import { levelFromTimeDomain } from './level.js'
 import { EQ_RANGE, trackGain } from './timeline.js'
-import { createMaster } from './playback.js'
+import { DOUBLE_DELAYS, SOFT_S_HZ, ceilingCurve, compressorSettings, delaySeconds, masteringSettings } from './effects.js'
 
 export const EQ_BANDS = [
   { id: 'low', name: 'Low', type: 'lowshelf', frequency: 200 },
@@ -28,8 +34,17 @@ export function createReverbImpulse(ctx, seconds = REVERB_SECONDS, decay = 3) {
   return impulse
 }
 
+const ECHO_FEEDBACK = 0.38
+const DOUBLE_LEVEL = 0.6
+
 function createStrip(ctx, track, master, reverb) {
   const input = ctx.createGain()
+  const softS = ctx.createBiquadFilter()
+  softS.type = 'peaking'
+  softS.frequency.setValueAtTime(SOFT_S_HZ, 0)
+  softS.Q.setValueAtTime(2, 0)
+  const comp = ctx.createDynamicsCompressor()
+  const makeup = ctx.createGain()
   const bands = EQ_BANDS.map((band) => {
     const filter = ctx.createBiquadFilter()
     filter.type = band.type
@@ -44,13 +59,9 @@ function createStrip(ctx, track, master, reverb) {
   meter.fftSize = 1024
 
   let last = input
-  for (const { filter } of bands) {
-    last.connect(filter)
-    last = filter
-  }
-  if (panner) {
-    last.connect(panner)
-    last = panner
+  for (const node of [softS, comp, makeup, ...bands.map((b) => b.filter), ...(panner ? [panner] : [])]) {
+    last.connect(node)
+    last = node
   }
   last.connect(fader)
   fader.connect(master)
@@ -58,16 +69,57 @@ function createStrip(ctx, track, master, reverb) {
   fader.connect(send)
   send.connect(reverb)
 
-  return { id: track.id, input, bands, panner, fader, send, meter, samples: new Float32Array(meter.fftSize) }
+  // Echo: a delay that feeds back on itself a little, getting darker each time round.
+  const echoSend = ctx.createGain()
+  const echo = ctx.createDelay(2)
+  const echoFeedback = ctx.createGain()
+  const echoTone = ctx.createBiquadFilter()
+  echoTone.type = 'lowpass'
+  echoTone.frequency.setValueAtTime(3200, 0)
+  echoFeedback.gain.value = ECHO_FEEDBACK
+  fader.connect(echoSend)
+  echoSend.connect(echo)
+  echo.connect(echoTone)
+  echoTone.connect(echoFeedback)
+  echoFeedback.connect(echo)
+  echoTone.connect(master)
+
+  // Doubler: two tiny delays, one in each ear, so one voice sounds like two.
+  const doubleSend = ctx.createGain()
+  const doubles = DOUBLE_DELAYS.map((time, i) => {
+    const delay = ctx.createDelay(0.1)
+    delay.delayTime.value = time
+    const side = ctx.createStereoPanner?.() ?? null
+    if (side) side.pan.value = i === 0 ? -1 : 1
+    doubleSend.connect(delay)
+    if (side) {
+      delay.connect(side)
+      side.connect(master)
+    } else {
+      delay.connect(master)
+    }
+    return { delay, side }
+  })
+  fader.connect(doubleSend)
+
+  return { id: track.id, input, bands, panner, fader, send, meter, softS, comp, makeup, echoSend, echo, doubleSend, doubles, samples: new Float32Array(meter.fftSize) }
 }
 
 export function createMixer(ctx) {
-  const out = createMaster(ctx) // gentle compressor so stacked tracks cannot clip the speakers
   const masterGain = ctx.createGain()
   const masterMeter = ctx.createAnalyser()
   masterMeter.fftSize = 1024
-  masterGain.connect(out.input)
-  masterGain.connect(masterMeter)
+  const glue = ctx.createDynamicsCompressor()
+  const masterMakeup = ctx.createGain()
+  const limiter = ctx.createDynamicsCompressor()
+  const ceiling = ctx.createWaveShaper()
+  masterGain.connect(glue)
+  glue.connect(masterMakeup)
+  masterMakeup.connect(limiter)
+  limiter.connect(ceiling)
+  ceiling.connect(ctx.destination)
+  ceiling.connect(masterMeter)
+  let lastCeiling = null
 
   const reverbIn = ctx.createGain()
   const convolver = ctx.createConvolver()
@@ -95,16 +147,43 @@ export function createMixer(ctx) {
       if (!timeline.tracks.some((t) => t.id === id)) {
         strip.fader.disconnect()
         strip.send.disconnect()
+        strip.echoSend.disconnect()
+        strip.doubleSend.disconnect()
         strips.delete(id)
       }
     }
     masterGain.gain.value = timeline.masterVolume
+    const m = masteringSettings(timeline.master)
+    glue.threshold.value = m.comp.threshold
+    glue.ratio.value = m.comp.ratio
+    glue.knee.value = 10
+    masterMakeup.gain.value = m.makeupGain
+    limiter.threshold.value = m.limiter.threshold
+    limiter.ratio.value = m.limiter.ratio
+    limiter.knee.value = 0
+    limiter.attack.value = 0.002
+    limiter.release.value = 0.1
+    if (lastCeiling !== m.ceilingGain) {
+      ceiling.curve = ceilingCurve(m.ceilingGain)
+      lastCeiling = m.ceilingGain
+    }
     for (const track of timeline.tracks) {
       const strip = strips.get(track.id)
       strip.fader.gain.value = trackGain(timeline, track)
       if (strip.panner) strip.panner.pan.value = track.pan
       for (const { id, filter } of strip.bands) filter.gain.value = Math.max(-EQ_RANGE, Math.min(EQ_RANGE, track.eq[id]))
       strip.send.gain.value = track.reverb
+      strip.softS.gain.value = -10 * track.softS
+      const c = compressorSettings(track.comp)
+      strip.comp.threshold.value = c.threshold
+      strip.comp.ratio.value = c.ratio
+      strip.comp.knee.value = c.knee
+      strip.comp.attack.value = c.attack
+      strip.comp.release.value = c.release
+      strip.makeup.gain.value = c.makeup
+      strip.echoSend.gain.value = track.delay
+      strip.echo.delayTime.value = delaySeconds(timeline.bpm, track.delayTime)
+      strip.doubleSend.gain.value = track.double * DOUBLE_LEVEL
     }
   }
 
@@ -120,15 +199,24 @@ export function createMixer(ctx) {
     return result
   }
 
+  // How much the limiter is turning the song down right now, in dB (0 when it is not working).
+  function reduction() {
+    const r = limiter.reduction
+    return Math.abs(typeof r === 'number' ? r : (r?.value ?? 0))
+  }
+
   function dispose() {
     for (const strip of strips.values()) {
       strip.fader.disconnect()
       strip.send.disconnect()
+      strip.echoSend.disconnect()
+      strip.doubleSend.disconnect()
     }
     strips.clear()
     masterGain.disconnect()
+    ceiling.disconnect()
     clickBus.disconnect()
   }
 
-  return { ctx, update, levels, dispose, strip: (id) => strips.get(id), clickBus, masterGain }
+  return { ctx, update, levels, reduction, dispose, strip: (id) => strips.get(id), clickBus, masterGain }
 }

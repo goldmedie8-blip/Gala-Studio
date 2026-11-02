@@ -521,3 +521,15 @@
     max-height: 60vh;
   }
 }
+
+/* ---- effects and mastering ---- */
+.mx-fx { display: flex; flex-direction: column; gap: var(--s2); padding-top: var(--s2); border-top: 1px solid var(--border); }
+.mx-control select { width: 100%; height: 34px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-3, var(--surface-2)); color: var(--text); }
+.mx-mastering { display: flex; flex-direction: column; gap: var(--s3); }
+.mx-mastering h3 { margin: 0; }
+.mx-mastering p { margin: 0; }
+.mx-master-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s3) var(--s5); }
+.mx-master-row .mx-control { min-width: 180px; }
+.mx-reduction { display: flex; flex-direction: column; gap: 2px; min-width: 90px; color: var(--text-2); font-size: 12px; }
+.mx-reduction strong { color: var(--text); font-size: 16px; font-variant-numeric: tabular-nums; }
+.mx-result strong { color: var(--accent); }

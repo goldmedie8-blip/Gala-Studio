@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Icon } from '../design/Icon.jsx'
 import { LogoMark } from '../design/Logo.jsx'
 import { getTools } from '../tools/index.js'
+import { InstallButton } from './InstallButton.jsx'
 import { useOnlineStatus } from './useOnlineStatus.js'
 
 function SearchBox() {
@@ -72,6 +73,7 @@ export function TopBar() {
       </Link>
       <SearchBox />
       <div className="topbar-actions">
+        <InstallButton />
         <ConnectionStatus />
         <Link to="/profile" className="avatar" aria-label="Profile">
           <Icon name="user" size={18} />

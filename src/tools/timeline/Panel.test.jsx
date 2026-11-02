@@ -140,4 +140,32 @@ describe('Timeline', () => {
     expect((await screen.findAllByText(/My hit/)).length).toBeGreaterThan(0)
     await waitFor(() => expect(clipButtons()).toHaveLength(2))
   })
+
+  test('every track has vocal effects, and presets fill them in', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    await screen.findByLabelText('Name of beat track Beat 1')
+    await user.click(screen.getByRole('button', { name: 'Mixer' }))
+    for (const name of ['Compressor, Audio 1', 'Soften S sounds, Audio 1', 'Doubler, Audio 1', 'Echo, Audio 1', 'Echo timing, Audio 1']) {
+      expect(screen.getByLabelText(name)).toBeInTheDocument()
+    }
+    await user.selectOptions(screen.getByLabelText('Effects preset, Audio 1'), 'echo')
+    expect(screen.getByLabelText('Echo, Audio 1')).toHaveValue('0.45')
+    expect(screen.getByLabelText('Echo timing, Audio 1')).toHaveValue('dotted')
+  })
+
+  test('mastering: pick a style, boost, and check loudness', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    await screen.findByLabelText('Name of beat track Beat 1')
+    await user.click(screen.getByRole('button', { name: /^add beat$/i }))
+    await user.click(screen.getByRole('button', { name: 'Mixer' }))
+    expect(screen.getByRole('button', { name: /match target loudness/i })).toBeDisabled()
+    await user.selectOptions(screen.getByLabelText('Mastering style'), 'streaming')
+    expect(screen.getByRole('button', { name: /match target loudness/i })).toBeEnabled()
+    fireEvent.change(screen.getByLabelText('Loudness boost'), { target: { value: '4' } })
+    expect(screen.getByLabelText('Loudness boost')).toHaveValue('4')
+    await user.click(screen.getByRole('button', { name: /check loudness/i }))
+    expect(await screen.findByText(/Loudness:/)).toBeInTheDocument()
+  })
 })

@@ -347,3 +347,14 @@
     height: 40px;
   }
 }
+
+/* ---- install ---- */
+.install-btn { height: 36px; padding: 0 var(--s3); }
+.install-card { display: flex; align-items: flex-start; gap: var(--s4); }
+.install-body { display: flex; flex-direction: column; gap: var(--s2); }
+.install-body h2 { margin: 0; font-size: 18px; }
+.install-body p { margin: 0; color: var(--text-2); }
+@media (max-width: 640px) {
+  .install-text { display: none; }
+  .install-btn { padding: 0 var(--s2); }
+}

@@ -1,6 +1,7 @@
 // Plays a timeline: schedules recordings and beats on the audio clock, loops, seeks, and renders the
 // finished song to a WAV file. Like the beat sequencer it wakes up every 25 ms and schedules whatever
 // falls in the next fraction of a second on the audio clock, so playback stays steady on a busy phone.
+import { measureLoudness } from './loudness.js'
 import { playClick } from './metronome.js'
 import { createMixer } from './mixer.js'
 import { STEPS } from './pattern.js'
@@ -218,8 +219,8 @@ export class TimelinePlayer {
   }
 }
 
-// Mixes the whole timeline faster than real time and returns a WAV file.
-export async function renderTimeline(timeline, getBuffer, { sampleRate = 44100 } = {}) {
+// Mixes the whole timeline faster than real time into audio samples.
+async function renderBuffer(timeline, getBuffer, { sampleRate = 44100 } = {}) {
   const OfflineCtx = globalThis.OfflineAudioContext || globalThis.webkitOfflineAudioContext
   if (!OfflineCtx) throw new Error('Exporting audio is not supported in this browser.')
   const duration = timelineDuration(timeline)
@@ -231,6 +232,17 @@ export async function renderTimeline(timeline, getBuffer, { sampleRate = 44100 }
   scheduleAudio(ctx, mixer, timeline, getBuffer, { from: 0, to: duration, ctxAt: 0 })
   scheduleBeats(ctx, mixer, timeline, { a: 0, b: duration, ctxAt: 0, from: 0, destFor: (track) => mixer.strip(track.id)?.input })
   const rendered = await ctx.startRendering()
-  return new Blob([encodeWav([rendered.getChannelData(0), rendered.getChannelData(1)], sampleRate)], { type: 'audio/wav' })
+  return { channels: [rendered.getChannelData(0), rendered.getChannelData(1)], sampleRate }
 }
 
+// The finished song as a WAV file.
+export async function renderTimeline(timeline, getBuffer, options) {
+  const { channels, sampleRate } = await renderBuffer(timeline, getBuffer, options)
+  return new Blob([encodeWav(channels, sampleRate)], { type: 'audio/wav' })
+}
+
+// How loud the finished song is: { lufs, peakDb }.
+export async function measureTimeline(timeline, getBuffer, options) {
+  const { channels, sampleRate } = await renderBuffer(timeline, getBuffer, options)
+  return measureLoudness(channels, sampleRate)
+}

@@ -6,6 +6,7 @@
 // three-band EQ and reverb send, which the mixer applies.
 import { clampOffset, planStart } from './mix.js'
 import { STEPS, normalizePattern } from './pattern.js'
+import { MAX_BOOST, isDelayTime, isMasterPreset } from './effects.js'
 import { normalizeNotes } from './notes.js'
 import { stepSeconds } from './sequencer.js'
 
@@ -41,6 +42,7 @@ export function emptyTimeline(bpm = 100) {
     bpm: clamp(Math.round(bpm), 60, 200, 100),
     masterVolume: 1,
     metronome: false,
+    master: { preset: 'off', boost: 0 },
     loop: { on: false, start: 0, end: 8 },
     tracks: [],
   }
@@ -57,6 +59,11 @@ export function emptyTrack(kind, name, id = newId()) {
     solo: false,
     eq: { low: 0, mid: 0, high: 0 },
     reverb: 0,
+    comp: 0,
+    softS: 0,
+    double: 0,
+    delay: 0,
+    delayTime: 'dotted',
     clips: [],
   }
 }
@@ -127,6 +134,11 @@ function normalizeTrack(raw) {
       high: clamp(raw.eq?.high, -EQ_RANGE, EQ_RANGE, 0),
     },
     reverb: clamp(raw.reverb, 0, 1, 0),
+    comp: clamp(raw.comp, 0, 1, 0),
+    softS: clamp(raw.softS, 0, 1, 0),
+    double: clamp(raw.double, 0, 1, 0),
+    delay: clamp(raw.delay, 0, 1, 0),
+    delayTime: isDelayTime(raw.delayTime) ? raw.delayTime : 'dotted',
     clips,
   }
 }
@@ -147,6 +159,10 @@ export function normalizeTimeline(raw) {
     bpm: Math.round(clamp(raw.bpm, 60, 200, base.bpm)),
     masterVolume: clamp(raw.masterVolume, 0, MAX_VOLUME, 1),
     metronome: raw.metronome === true,
+    master: {
+      preset: isMasterPreset(raw.master?.preset) ? raw.master.preset : 'off',
+      boost: clamp(raw.master?.boost, 0, MAX_BOOST, 0),
+    },
     loop: {
       on: raw.loop?.on === true,
       start: Math.min(start, end),
@@ -208,6 +224,12 @@ export function setTempo(timeline, bpm) {
 }
 
 export const setMasterVolume = (timeline, value) => ({ ...timeline, masterVolume: clamp(value, 0, MAX_VOLUME, 1) })
+export function setMastering(timeline, patch) {
+  const master = { ...timeline.master }
+  if ('preset' in patch && isMasterPreset(patch.preset)) master.preset = patch.preset
+  if ('boost' in patch) master.boost = clamp(patch.boost, 0, MAX_BOOST, master.boost)
+  return { ...timeline, master }
+}
 export const setMetronome = (timeline, on) => ({ ...timeline, metronome: Boolean(on) })
 
 export function setLoop(timeline, patch) {
@@ -235,6 +257,8 @@ export function setTrack(timeline, trackId, patch) {
     if ('mute' in patch) next.mute = Boolean(patch.mute)
     if ('solo' in patch) next.solo = Boolean(patch.solo)
     if ('reverb' in patch) next.reverb = clamp(patch.reverb, 0, 1, t.reverb)
+    for (const key of ['comp', 'softS', 'double', 'delay']) if (key in patch) next[key] = clamp(patch[key], 0, 1, t[key])
+    if ('delayTime' in patch && isDelayTime(patch.delayTime)) next.delayTime = patch.delayTime
     if (patch.eq) {
       next.eq = { ...t.eq }
       for (const band of ['low', 'mid', 'high']) {

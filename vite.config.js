@@ -5,7 +5,9 @@ import { defineConfig } from 'vitest/config'
 
 // "npm run dev:phone" serves over https. Phones only allow the microphone on https or localhost,
 // so testing recording from a phone on your Wi-Fi needs this.
+// On GitHub Pages the app lives under /Gala-Studio/, not at the site root. The deploy sets BASE_PATH.
 const base = process.env.BASE_PATH || '/'
+
 export default defineConfig(({ mode }) => ({
   base,
   plugins: [
@@ -17,11 +19,25 @@ export default defineConfig(({ mode }) => ({
       manifest: {
         name: 'Gala Studio',
         short_name: 'Gala',
+        id: base,
+        lang: 'en',
         description: 'An offline-first music studio for young producers and artists.',
         theme_color: '#0c0c0e',
         background_color: '#0c0c0e',
         display: 'standalone',
         orientation: 'any',
+        shortcuts: [
+          { name: 'Record', url: `${base}record`, icons: [{ src: 'icons/icon-192.png', sizes: '192x192' }] },
+          { name: 'Timeline', url: `${base}timeline`, icons: [{ src: 'icons/icon-192.png', sizes: '192x192' }] },
+          { name: 'Piano', url: `${base}piano`, icons: [{ src: 'icons/icon-192.png', sizes: '192x192' }] },
+          { name: 'Drum pads', url: `${base}drums`, icons: [{ src: 'icons/icon-192.png', sizes: '192x192' }] },
+        ],
+        screenshots: [
+          { src: 'screenshots/wide-home.png', sizes: '1280x720', type: 'image/png', form_factor: 'wide', label: 'Gala Studio home' },
+          { src: 'screenshots/wide-piano.png', sizes: '1280x720', type: 'image/png', form_factor: 'wide', label: 'Piano' },
+          { src: 'screenshots/narrow-home.png', sizes: '540x960', type: 'image/png', form_factor: 'narrow', label: 'Gala Studio home' },
+          { src: 'screenshots/narrow-piano.png', sizes: '540x960', type: 'image/png', form_factor: 'narrow', label: 'Piano' },
+        ],
         start_url: base,
         scope: base,
         categories: ['music', 'productivity'],
@@ -41,7 +57,7 @@ export default defineConfig(({ mode }) => ({
       },
     }),
   ],
-    test: {
+  test: {
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./tests/setup.js'],
