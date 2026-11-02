@@ -1,4 +1,4 @@
-import { Suspense, lazy, useMemo } from 'react'
+import { Suspense, lazy } from 'react'
 import { Icon } from '../design/Icon.jsx'
 
 function ComingSoon({ tool }) {
@@ -15,10 +15,19 @@ function ComingSoon({ tool }) {
   )
 }
 
+// Each tool's screen is made once and remembered. Making it again on every draw would restart its loading
+// every time, and moving from one tool to another (for example Piano to Timeline) would never finish.
+const panels = new Map()
+function panelFor(tool) {
+  if (!tool.component) return null
+  if (!panels.has(tool.id)) panels.set(tool.id, lazy(tool.component))
+  return panels.get(tool.id)
+}
+
 // Renders a registered tool. When a tool ships a real panel (component: () => import('./Panel.jsx')),
 // it loads on demand. Until then the page shows what is coming.
 export default function ToolPage({ tool }) {
-  const Panel = useMemo(() => (tool.component ? lazy(tool.component) : null), [tool])
+  const Panel = panelFor(tool)
 
   return (
     <div className="page">

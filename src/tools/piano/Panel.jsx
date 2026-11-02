@@ -223,7 +223,7 @@ export default function Panel() {
         </div>
         {p.saved && (
           <p className="pn-saved" role="status">
-            Added to {p.saved.songName} as a piano track. <Link to="/timeline">Open in Timeline</Link>
+            Added to your song "{p.saved.songName}" as a piano track, on top of your beat. <Link to="/timeline">Open Timeline to hear it and mix it</Link>
           </p>
         )}
       </section>

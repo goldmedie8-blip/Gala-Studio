@@ -53,7 +53,7 @@ export async function addPianoPartToSong(part) {
 export async function addDrumPartToSong(part) {
   const { project, timeline: base, start, bars } = await prepare(part.bars)
   const trackId = newId()
-  const count = base.tracks.filter((t) => t.kind === 'beat').length
+  const count = base.tracks.filter((t) => t.kind === 'beat' && t.name.startsWith('Drums')).length
   let timeline = addTrack(base, { kind: 'beat', name: `Drums ${count + 1}`, id: trackId })
   const clipId = newId()
   timeline = addBeatClip(timeline, trackId, { id: clipId, name: part.name || 'Drum part', start, bars, pattern: part.pattern })
