@@ -29,5 +29,6 @@ describe('formatDuration', () => {
     expect(formatDuration(5400)).toBe('0:05')
     expect(formatDuration(83500)).toBe('1:23')
     expect(formatDuration(-5)).toBe('0:00')
+    expect(formatDuration(900)).toBe('0:01')
   })
 })
