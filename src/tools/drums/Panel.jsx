@@ -44,15 +44,19 @@ export default function Panel() {
                 <Icon name="play" size={18} />
                 Play part
               </button>
+              <button type="button" className="btn btn-secondary" onClick={p.jam} disabled={p.backing === 'none'}>
+                <Icon name="drum" size={18} />
+                Jam with backing
+              </button>
             </>
           )}
           <span className="dr-status" role="status">
-            {p.mode === 'counting' ? 'Get ready...' : p.mode === 'recording' ? 'Recording' : p.mode === 'playing' ? 'Playing' : ''}
+            {p.mode === 'counting' ? 'Get ready...' : p.mode === 'recording' ? 'Recording' : p.mode === 'playing' ? 'Playing' : p.mode === 'jamming' ? 'Jamming: tap along' : ''}
           </span>
         </div>
         <div className="dr-group">
           <label className="tempo-value">
-            <input type="number" min="60" max="200" inputMode="numeric" aria-label="Tempo in beats per minute" value={p.bpm} onChange={(e) => p.setBpm(e.target.value)} />
+            <input type="number" min="60" max="200" inputMode="numeric" aria-label="Tempo in beats per minute" value={p.backing === 'song' && p.songBpm ? p.songBpm : p.bpm} disabled={p.backing === 'song' && Boolean(p.songBpm)} onChange={(e) => p.setBpm(e.target.value)} />
             <span>BPM</span>
           </label>
           <div className="field">
@@ -69,6 +73,21 @@ export default function Panel() {
             <span>Swing</span>
             <input type="range" min="0" max="1" step="0.05" value={p.swing} aria-label="Swing" onChange={(e) => p.setSwing(e.target.value)} />
           </label>
+          <div className="field">
+            <label htmlFor="dr-backing">Plays under you</label>
+            <select id="dr-backing" value={p.backing} onChange={(e) => p.setBacking(e.target.value)}>
+              <option value="song">My whole song (all tracks)</option>
+              <option value="none">Nothing, just the click</option>
+            </select>
+          </div>
+          <button type="button" className="toggle-btn" aria-pressed={p.hearPart} onClick={() => p.setHearPart(!p.hearPart)}>
+            Hear my drums while recording
+          </button>
+          {p.backing === 'song' && (
+            <button type="button" className="toggle-btn" aria-pressed={p.includeDrums} onClick={() => p.setIncludeDrums(!p.includeDrums)}>
+              Include drums already in the song
+            </button>
+          )}
           <button type="button" className="toggle-btn" aria-pressed={p.click} onClick={() => p.setClick(!p.click)}>
             Click
           </button>
@@ -76,7 +95,9 @@ export default function Panel() {
             Count-in
           </button>
         </div>
-        <p className="muted dr-song">{p.song ? `Song: ${p.song.name}.` : 'No song yet. Saving makes one.'} Drums are added as their own track and loop across the song.</p>
+        <p className="muted dr-song">{p.song ? `Song: ${p.song.name}.` : 'No song yet. Saving makes one.'} Drums are added as their own track and loop across the song. Press <strong>Jam with backing</strong> to tap along freely with no recording.</p>
+        {p.notice && <p className="muted dr-song">{p.notice}</p>}
+        {p.notice && <p className="muted dr-song">{p.notice}</p>}
       </section>
 
       {p.error && (

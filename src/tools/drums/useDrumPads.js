@@ -6,8 +6,10 @@ import { DRUM_LANES, MAX_BPM, MIN_BPM, STEPS } from '../../engine/pattern.js'
 import { swingDelay } from '../../engine/sequencer.js'
 import { createMaster, playDrum } from '../../engine/playback.js'
 import { loadBeat } from '../../storage/beatStore.js'
-import { addDrumPartToSong, currentSong } from '../../storage/songParts.js'
+import { barSeconds } from '../../engine/timeline.js'
+import { addDrumPartToSong, currentSong, loadSongTimeline } from '../../storage/songParts.js'
 import { PRESETS } from '../beats/presets.js'
+import { useAudioEngine } from '../timeline/useAudioEngine.js'
 
 const DRAFT_KEY = 'gala.drums.v1'
 const LEAD_BEATS = 4
@@ -31,6 +33,11 @@ export function useDrumPads() {
   const [bpm, setBpmState] = useState(draft.bpm ?? (loadBeat() ?? PRESETS[0].pattern).bpm)
   const [hits, setHits] = useState(() => normalizeHits(draft.hits, draft.bars ?? 1))
   const [swing, setSwingState] = useState(draft.swing ?? 0)
+  const [backing, setBacking] = useState(draft.backing ?? 'song') // what plays under you: song | none
+  const [hearPart, setHearPart] = useState(true)
+  const [includeDrums, setIncludeDrums] = useState(false)
+  const [songBpm, setSongBpm] = useState(null)
+  const [notice, setNotice] = useState('')
   const [click, setClick] = useState(true)
   const [countIn, setCountIn] = useState(true)
   const [partName, setPartName] = useState(draft.partName ?? 'Drum idea')
@@ -45,8 +52,11 @@ export function useDrumPads() {
 
   const hitsRef = useRef(hits)
   hitsRef.current = hits
-  const live = useRef({ bars, bpm, click, countIn, swing })
-  live.current = { bars, bpm, click, countIn, swing }
+  const live = useRef({ bars, bpm, click, countIn, swing, backing, hearPart, includeDrums })
+  const backingRef = useRef(null)
+  const getBacking = useCallback(() => backingRef.current, [])
+  const { api: engine } = useAudioEngine({ getTimeline: getBacking })
+  live.current = { bars, bpm, click, countIn, swing, backing, hearPart, includeDrums }
   const sessionRef = useRef(null)
   const historyRef = useRef([])
   const masterRef = useRef(null)
@@ -66,12 +76,23 @@ export function useDrumPads() {
   }, [draft.bpm])
 
   useEffect(() => {
+    if (backing !== 'song') return undefined
+    let alive = true
+    loadSongTimeline()
+      .then((song) => alive && setSongBpm(song ? song.timeline.bpm : null))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [backing])
+
+  useEffect(() => {
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ bars, bpm, hits, partName, swing }))
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ backing, bars, bpm, hits, partName, swing }))
     } catch {
       // not remembered
     }
-  }, [bars, bpm, hits, partName, swing])
+  }, [backing, bars, bpm, hits, partName, swing])
 
   const audio = useCallback(() => {
     const ctx = getAudioContext()
@@ -90,11 +111,12 @@ export function useDrumPads() {
     sessionRef.current = null
     if (!session) return
     window.clearInterval(session.timer)
+    engine.engineRef.current?.player.stop()
     session.gate.gain.setValueAtTime(0, session.ctx.currentTime)
     session.gate.disconnect()
     setMode('idle')
     setPosition(0)
-  }, [])
+  }, [engine])
 
   const stop = useCallback(() => endSession(), [endSession])
 
@@ -127,24 +149,51 @@ export function useDrumPads() {
     [audio],
   )
 
+  // kind: 'record' (count-in, then your hits are captured), 'play' (your drums with the backing) or
+  // 'jam' (only the backing, so you can tap along freely before recording).
   const start = useCallback(
-    async (recording) => {
+    async (kind) => {
       endSession()
       setError('')
+      setNotice('')
       setSaved(null)
+      const recording = kind === 'record'
       try {
+        const s = live.current
+        // The song you are building plays under you, lined up with where its beat starts.
+        let song = null
+        if (s.backing === 'song') {
+          song = await loadSongTimeline()
+          if (!song) setNotice('Your song has nothing in it yet, so only the click plays.')
+        }
+        const bpm = song ? song.timeline.bpm : s.bpm
+        const beatSec = 60 / bpm
+        let startAt = 0
+        if (song) {
+          const beatClips = song.timeline.tracks.flatMap((t) => t.clips.filter((c) => c.bars && !c.notes))
+          startAt = beatClips.length ? Math.min(...beatClips.map((c) => c.start)) : 0
+          backingRef.current = {
+            ...song.timeline,
+            metronome: false,
+            loop: { on: true, start: startAt, end: startAt + s.bars * barSeconds(bpm) },
+            // drums you added before are not played again unless you ask for them
+            tracks: song.timeline.tracks.map((t) => (t.kind === 'beat' && t.name.startsWith('Drums') && !s.includeDrums ? { ...t, mute: true } : t)),
+          }
+          setSongBpm(bpm)
+          await engine.loadAll(backingRef.current)
+        }
         await unlockAudio()
         const { ctx, input } = audio()
-        const s = live.current
-        const beatSec = 60 / s.bpm
         const lead = recording && s.countIn ? LEAD_BEATS : 0
         const t0 = ctx.currentTime + 0.12 + lead * beatSec
         const gate = ctx.createGain()
         gate.connect(input)
         const total = s.bars * STEPS
-        const session = { ctx, t0, beatSec, bars: s.bars, gate, recording, skip: new Set(), cursor: -lead * 4, timer: 0, mode: lead ? 'counting' : recording ? 'recording' : 'playing' }
+        const playsPart = kind === 'play' || (recording && s.hearPart)
+        const session = { ctx, t0, beatSec, bpm, bars: s.bars, gate, recording, skip: new Set(), cursor: -lead * 4, timer: 0, mode: lead ? 'counting' : recording ? 'recording' : kind === 'jam' ? 'jamming' : 'playing' }
         sessionRef.current = session
         if (recording) pushHistory()
+        if (song) (await engine.ensureEngine()).player.play(startAt, t0)
         setMode(session.mode)
 
         const tick = () => {
@@ -152,9 +201,9 @@ export function useDrumPads() {
           const limit = ((now + 0.12 - t0) / beatSec) * 4 // in steps
           for (let n = Math.ceil(session.cursor); n < limit; n++) {
             const time = t0 + (n * beatSec) / 4
-            const late = n >= 0 ? swingDelay(n, live.current.bpm, live.current.swing) : 0
+            const late = n >= 0 ? swingDelay(n, bpm, live.current.swing) : 0
             if (n % 4 === 0 && (n < 0 || live.current.click)) playClick(ctx, gate, time, mod(n, 16) === 0)
-            if (n < 0) continue
+            if (n < 0 || !playsPart) continue
             for (const lane of DRUM_LANES) {
               if (hitsRef.current[lane.id][n % total] && !session.skip.has(`${lane.id}:${n}`)) playDrum(ctx, gate, lane.id, time + late)
             }
@@ -175,11 +224,12 @@ export function useDrumPads() {
         setError(e.message || 'Could not start audio.')
       }
     },
-    [audio, endSession, pushHistory],
+    [audio, endSession, engine, pushHistory],
   )
 
-  const record = useCallback(() => start(true), [start])
-  const play = useCallback(() => start(false), [start])
+  const record = useCallback(() => start('record'), [start])
+  const play = useCallback(() => start('play'), [start])
+  const jam = useCallback(() => start('jam'), [start])
 
   const toggleStep = useCallback(
     (laneId, step) => {
@@ -259,5 +309,5 @@ export function useDrumPads() {
 
   useEffect(() => endSession, [endSession])
 
-  return { swing, setSwing, clearLane, repeatFirstBar, bars, setBars, bpm, setBpm, hits, click, setClick, countIn, setCountIn, partName, setPartName, mode, position, flash, song, saved, saving, error, canUndo, hit, record, play, stop, toggleStep, clear, undo, saveToSong }
+  return { backing, setBacking, hearPart, setHearPart, includeDrums, setIncludeDrums, songBpm, notice, jam, swing, setSwing, clearLane, repeatFirstBar, bars, setBars, bpm, setBpm, hits, click, setClick, countIn, setCountIn, partName, setPartName, mode, position, flash, song, saved, saving, error, canUndo, hit, record, play, stop, toggleStep, clear, undo, saveToSong }
 }

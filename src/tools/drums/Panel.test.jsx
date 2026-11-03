@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { IDBFactory } from 'fake-indexeddb'
 import { MemoryRouter } from 'react-router-dom'
@@ -7,6 +7,7 @@ import { FakeAudioContext, FakeOfflineAudioContext } from '../../../tests/fakeAu
 import { resetAudioContextForTests } from '../../engine/audioContext.js'
 import { listProjects } from '../../storage/projects.js'
 import { getTimeline } from '../../storage/timelines.js'
+import { addPianoPartToSong } from '../../storage/songParts.js'
 import Panel from './Panel.jsx'
 
 const renderPanel = () =>
@@ -103,5 +104,24 @@ describe('Drum pads', () => {
     const [song] = await listProjects()
     const timeline = await getTimeline(song.id)
     expect(timeline.tracks.find((t) => t.name.startsWith('Drums')).clips[0].pattern.swing).toBe(0.5)
+  })
+
+  test('Jam plays your song under you and records nothing', async () => {
+    const user = userEvent.setup()
+    await addPianoPartToSong({ name: 'Riff', bars: 2, sound: 'piano', notes: [{ midi: 60, start: 0, length: 1, velocity: 0.8 }] })
+    renderPanel()
+    await waitFor(() => expect(screen.getByLabelText('Tempo in beats per minute')).toBeDisabled()) // the song sets the tempo
+    await user.click(await screen.findByRole('button', { name: /jam with backing/i }))
+    expect(await screen.findByText('Jamming: tap along')).toBeInTheDocument()
+    fireEvent.keyDown(window, { key: 'a' })
+    await user.click(screen.getByRole('button', { name: /^stop$/i }))
+    expect(screen.getByRole('button', { name: 'Kick step 1', exact: true })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  test('with nothing under you there is nothing to jam with', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    await user.selectOptions(await screen.findByLabelText('Plays under you'), 'none')
+    expect(screen.getByRole('button', { name: /jam with backing/i })).toBeDisabled()
   })
 })
