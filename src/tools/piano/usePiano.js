@@ -7,9 +7,11 @@ import { createMaster, playStep } from '../../engine/playback.js'
 import { chordNotes, clampNote, createVoice, playNote } from '../../engine/piano.js'
 import { SCALES } from '../../engine/scale.js'
 import { Sequencer } from '../../engine/sequencer.js'
+import { barSeconds } from '../../engine/timeline.js'
 import { loadBeat } from '../../storage/beatStore.js'
-import { addPianoPartToSong, currentSong } from '../../storage/songParts.js'
+import { addPianoPartToSong, currentSong, loadSongTimeline } from '../../storage/songParts.js'
 import { PRESETS } from '../beats/presets.js'
+import { useAudioEngine } from '../timeline/useAudioEngine.js'
 
 const DRAFT_KEY = 'gala.piano.v1'
 const LEAD_BEATS = 4 // one bar of count-in
@@ -56,7 +58,11 @@ export function usePiano() {
   const [bpm, setBpmState] = useState(draft.bpm ?? beat.bpm)
   const [bars, setBarsState] = useState(draft.bars ?? 2)
   const [quantizeId, setQuantizeId] = useState(draft.quantizeId ?? '16')
-  const [withBeat, setWithBeat] = useState(true)
+  const [backing, setBacking] = useState(draft.backing ?? 'beat') // what plays under you: beat | song | none
+  const [hearPart, setHearPart] = useState(true)
+  const [includePiano, setIncludePiano] = useState(false)
+  const [songBpm, setSongBpm] = useState(null)
+  const [notice, setNotice] = useState('')
   const [metronome, setMetronome] = useState(false)
   const [countIn, setCountIn] = useState(true)
   const [notes, setNotes] = useState(() => normalizeNotes(draft.notes, draft.bars ?? 2))
@@ -71,13 +77,16 @@ export function usePiano() {
   const [canUndo, setCanUndo] = useState(false)
   const [selected, setSelected] = useState(null) // index of the note being edited
 
+  const backingRef = useRef(null) // the song as it plays under you
+  const getBacking = useCallback(() => backingRef.current, [])
+  const { api: engine } = useAudioEngine({ getTimeline: getBacking })
   const ref = useRef({})
   const live = useRef(new Map()) // midi -> { voices, key }
   const sessionRef = useRef(null)
   const historyRef = useRef([])
   const masterRef = useRef(null)
   const state = useRef({})
-  state.current = { sound, chord, keyRoot, scale, snap, notes, bars, bpm, beat, withBeat, metronome, countIn, quantizeId }
+  state.current = { sound, chord, keyRoot, scale, snap, notes, bars, bpm, beat, backing, hearPart, includePiano, metronome, countIn, quantizeId }
   ref.current.notes = notes
 
   // The song you are working on gives its beat and tempo.
@@ -98,13 +107,25 @@ export function usePiano() {
     }
   }, [draft.bpm])
 
+  // With the whole song as backing, the song's own tempo is used, so show it.
+  useEffect(() => {
+    if (backing !== 'song') return undefined
+    let alive = true
+    loadSongTimeline()
+      .then((song) => alive && setSongBpm(song ? song.timeline.bpm : null))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [backing])
+
   useEffect(() => {
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ sound, keyRoot, scale, bpm, bars, quantizeId, notes, partName }))
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ backing, sound, keyRoot, scale, bpm, bars, quantizeId, notes, partName }))
     } catch {
       // not remembered
     }
-  }, [sound, keyRoot, scale, bpm, bars, quantizeId, notes, partName])
+  }, [backing, sound, keyRoot, scale, bpm, bars, quantizeId, notes, partName])
 
   const audio = useCallback(() => {
     const ctx = getAudioContext()
@@ -178,6 +199,7 @@ export function usePiano() {
       if (!session) return
       window.clearInterval(session.timer)
       session.sequencer?.stop()
+      engine.engineRef.current?.player.stop()
       session.gate.gain.setValueAtTime(0, session.ctx.currentTime)
       session.gate.disconnect()
       session.beatBus.disconnect()
@@ -195,23 +217,49 @@ export function usePiano() {
       setMode('idle')
       setPosition(0)
     },
-    [pushHistory],
+    [pushHistory, engine],
   )
 
   const stop = useCallback(() => {
     endSession(true)
   }, [endSession])
 
+  // kind: 'record' (count-in, then notes are captured), 'play' (your part with the backing) or
+  // 'jam' (only the backing, so you can try ideas on the keys before recording).
   const start = useCallback(
-    async (recording) => {
+    async (kind) => {
       endSession(false)
       setError('')
+      setNotice('')
       setSaved(null)
+      const recording = kind === 'record'
       try {
+        const s = state.current
+        // Whole-song backing: all the tracks of your song loop under you, lined up with the beat.
+        let song = null
+        if (s.backing === 'song') {
+          song = await loadSongTimeline()
+          if (!song) setNotice('Your song has nothing in it yet, so the beat plays instead.')
+        }
+        const bpm = song ? song.timeline.bpm : s.bpm
+        const beatSec = 60 / bpm
+        const barSec = barSeconds(bpm)
+        let startAt = 0
+        if (song) {
+          const beatClips = song.timeline.tracks.flatMap((t) => t.clips.filter((c) => c.bars && !c.notes))
+          startAt = beatClips.length ? Math.min(...beatClips.map((c) => c.start)) : 0
+          backingRef.current = {
+            ...song.timeline,
+            metronome: false,
+            loop: { on: true, start: startAt, end: startAt + s.bars * barSec },
+            // the piano you are working on is not played again unless you ask for it
+            tracks: song.timeline.tracks.map((t) => (t.kind === 'piano' && !s.includePiano ? { ...t, mute: true } : t)),
+          }
+          setSongBpm(bpm)
+          await engine.loadAll(backingRef.current)
+        }
         await unlockAudio()
         const { ctx, master } = audio()
-        const s = state.current
-        const beatSec = 60 / s.bpm
         const lead = recording && s.countIn ? LEAD_BEATS : 0
         const t0 = ctx.currentTime + 0.12 + lead * beatSec
         const gate = ctx.createGain()
@@ -219,23 +267,27 @@ export function usePiano() {
         const beatBus = ctx.createGain()
         beatBus.gain.value = 0.55
         beatBus.connect(master.input)
-        const pattern = { ...s.beat, bpm: s.bpm }
-        const sequencer = s.withBeat
-          ? new Sequencer({
-              getTime: () => ctx.currentTime,
-              getBpm: () => state.current.bpm,
-              getSwing: () => state.current.beat.swing,
-              getLength: () => arrangementLength(state.current.beat),
-              play: (step, time) => playStep(ctx, beatBus, { ...state.current.beat, bpm: state.current.bpm }, step, time),
-            })
-          : null
-        void pattern
+        const sequencer =
+          !song && s.backing !== 'none'
+            ? new Sequencer({
+                getTime: () => ctx.currentTime,
+                getBpm: () => bpm,
+                getSwing: () => state.current.beat.swing,
+                getLength: () => arrangementLength(state.current.beat),
+                play: (step, time) => playStep(ctx, beatBus, { ...state.current.beat, bpm }, step, time),
+              })
+            : null
+        const playsPart = kind === 'play' || (recording && s.hearPart)
         const session = {
-          ctx, t0, beatSec, bars: s.bars, total: s.bars * BEATS_PER_BAR, mode: lead ? 'counting' : recording ? 'recording' : 'playing',
+          ctx, t0, beatSec, bpm, bars: s.bars, total: s.bars * BEATS_PER_BAR, mode: lead ? 'counting' : recording ? 'recording' : kind === 'jam' ? 'jamming' : 'playing',
           recorder: recording ? new NoteRecorder(s.bars) : null, gate, beatBus, sequencer, cursor: -lead, timer: 0,
         }
         sessionRef.current = session
         sequencer?.start(t0)
+        if (song) {
+          const running = await engine.ensureEngine()
+          running.player.play(startAt, t0)
+        }
         setMode(session.mode)
 
         const tick = () => {
@@ -248,17 +300,17 @@ export function usePiano() {
           // the notes already in the part, looping
           const a = Math.max(0, session.cursor) * beatSec
           const b = limit * beatSec
-          if (b > a) {
+          if (b > a && playsPart) {
             const clip = { start: 0, bars: 100000, loopBars: session.bars, shift: 0, notes: ref.current.notes }
-            for (const e of scheduleClipNotes(clip, 60 / state.current.bpm, a, b)) {
+            for (const e of scheduleClipNotes(clip, bpm, a, b)) {
               playNote(ctx, gate, e.midi, t0 + e.time, { duration: e.seconds, velocity: e.velocity, sound: state.current.sound })
             }
           }
           if (limit > session.cursor) session.cursor = limit
           const here = (now - t0) / beatSec
           if (session.mode === 'counting' && here >= 0) {
-            session.mode = recording ? 'recording' : 'playing'
-            setMode(session.mode)
+            session.mode = 'recording'
+            setMode('recording')
           }
           setPosition(here < 0 ? here : mod(here, session.total))
         }
@@ -269,11 +321,12 @@ export function usePiano() {
         setError(e.message || 'Could not start audio.')
       }
     },
-    [audio, endSession],
+    [audio, endSession, engine],
   )
 
-  const record = useCallback(() => start(true), [start])
-  const play = useCallback(() => start(false), [start])
+  const record = useCallback(() => start('record'), [start])
+  const play = useCallback(() => start('play'), [start])
+  const jam = useCallback(() => start('jam'), [start])
 
   // ---- editing the part -----------------------------------------------------------------------------
   const clear = useCallback(() => {
@@ -434,7 +487,7 @@ export function usePiano() {
 
   return {
     sound, setSound, octave, shiftOctave, chord, setChord, keyRoot, setKeyRoot, scale, setScale, showKey, setShowKey, snap, setSnap,
-    bpm, setBpm, bars, setBars, quantizeId, setQuantizeId, withBeat, setWithBeat, metronome, setMetronome, countIn, setCountIn,
+    bpm, setBpm, bars, setBars, quantizeId, setQuantizeId, backing, setBacking, hearPart, setHearPart, includePiano, setIncludePiano, songBpm, notice, jam, metronome, setMetronome, countIn, setCountIn,
     notes, partName, setPartName, mode, position, held, song, saved, saving, error, canUndo,
     selected, addNote, selectNote, changeSelected, deleteSelected, transpose, doublePart,
     noteDown, noteUp, releaseAll, record, play, stop, clear, undo, tidyUp, saveToSong, beat,

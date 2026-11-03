@@ -7,6 +7,7 @@ import { FakeAudioContext, FakeOfflineAudioContext } from '../../../tests/fakeAu
 import { resetAudioContextForTests } from '../../engine/audioContext.js'
 import { getTimeline } from '../../storage/timelines.js'
 import { getCurrentProjectId, listProjects } from '../../storage/projects.js'
+import { addPianoPartToSong } from '../../storage/songParts.js'
 import Panel from './Panel.jsx'
 import { snapToKey } from './usePiano.js'
 
@@ -100,5 +101,35 @@ describe('Piano', () => {
     expect(screen.getAllByRole('button', { name: /^Note / })).toHaveLength(1)
     await user.click(screen.getByRole('button', { name: /^undo$/i }))
     expect(screen.getAllByRole('button', { name: /^Note / })).toHaveLength(2)
+  })
+
+  test('Jam plays the backing so you can try ideas, and records nothing', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    await user.click(await screen.findByRole('button', { name: /jam with backing/i }))
+    expect(await screen.findByText('Jamming: play along')).toBeInTheDocument()
+    fireEvent.keyDown(window, { key: 'a' })
+    fireEvent.keyUp(window, { key: 'a' })
+    await user.click(screen.getByRole('button', { name: /^stop$/i }))
+    expect(screen.queryAllByRole('button', { name: /^Note / })).toHaveLength(0)
+  })
+
+  test('with nothing under you there is nothing to jam with', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    await user.selectOptions(await screen.findByLabelText('Plays under you'), 'none')
+    expect(screen.getByRole('button', { name: /jam with backing/i })).toBeDisabled()
+  })
+
+  test('the whole song can play under you, at the song tempo', async () => {
+    const user = userEvent.setup()
+    await addPianoPartToSong({ name: 'Riff', bars: 2, sound: 'piano', notes: [{ midi: 60, start: 0, length: 1, velocity: 0.8 }] })
+    renderPanel()
+    await user.selectOptions(await screen.findByLabelText('Plays under you'), 'song')
+    await waitFor(() => expect(screen.getByLabelText('Tempo in beats per minute')).toBeDisabled())
+    expect(screen.getByRole('button', { name: /include piano already in the song/i })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /jam with backing/i }))
+    expect(await screen.findByText('Jamming: play along')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^stop$/i }))
   })
 })

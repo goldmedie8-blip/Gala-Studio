@@ -109,12 +109,13 @@ export class TimelinePlayer {
     return Math.min(pass.to, Math.max(pass.from, pass.from + (now - pass.ctxAt)))
   }
 
-  play(from = this.pos) {
+  // `at` (optional) is the audio-clock time to start at, so something else can be lined up with it.
+  play(from = this.pos, at) {
     this.clear()
     const timeline = this.getTimeline()
     const start = Math.max(0, from)
     const { loop } = timeline
-    const first = { from: start, to: loop.on && start < loop.end ? loop.end : Infinity, ctxAt: this.ctx.currentTime + START_DELAY }
+    const first = { from: start, to: loop.on && start < loop.end ? loop.end : Infinity, ctxAt: at ?? this.ctx.currentTime + START_DELAY }
     this.passes = [first]
     this.cursor = start
     this.state = 'playing'

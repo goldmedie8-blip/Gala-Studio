@@ -60,3 +60,11 @@ export async function addDrumPartToSong(part) {
   await saveTimeline(project.id, timeline)
   return { project, timeline, clipId }
 }
+
+// The current song and its timeline (all its tracks), for hearing it while you play. null if there is none.
+export async function loadSongTimeline() {
+  const project = await currentSong()
+  if (!project) return null
+  const timeline = await songTimeline(project)
+  return timeline.tracks.length ? { project, timeline } : null
+}
